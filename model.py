@@ -44,6 +44,7 @@ class File(DeclarativeBase):
     id = Column(u'id', Integer(), primary_key=True)
     number = Column('number', Integer())
     name = Column('name', Text())
+    module = Column('module', ForeignKey('modules.id'))
 
 class Function(DeclarativeBase):
     __tablename__ = 'functions'
@@ -53,6 +54,7 @@ class Function(DeclarativeBase):
     size    = Column('size', Text())
     parameter_size   = Column('parameter_size', Text())
     name    = Column('name', Text())
+    filename = Column('filename', ForeignKey('files.id'))
 
 class Line(DeclarativeBase):
     __tablename__ = 'lines'
@@ -62,6 +64,7 @@ class Line(DeclarativeBase):
     size = Column('size', Text())
     line = Column('line', Integer())
     filenum = Column('filenum', Integer())
+    function = Column('function', ForeignKey('functions.id'))
 
 class StackAddress(DeclarativeBase):
     __tablename__ = 'stackaddresses'
@@ -77,12 +80,11 @@ class StackWalk(DeclarativeBase):
     id = Column(u'id', Integer(), primary_key=True)
     stackwalk = Column('stackwalk', Text())
 
-
 class SymbolDB():
 
-
     def main(self):
-        createdb = False
+        dropdb = True
+        createdb = True
         db = "symbols"
         sa_url = 'postgresql://selena@localhost/'
 
@@ -91,7 +93,21 @@ class SymbolDB():
         engine = create_engine(sa_url, implicit_returning=False)
         self.engine = engine
 
-        self.session = sessionmaker(bind=engine)()
+        session = sessionmaker(bind=engine)()
+        self.session = session
+
+        if dropdb:
+            try:
+                session.connection().connection.set_isolation_level(0)
+                session.execute('DROP DATABASE %s' % db)
+                session.connection().connection.set_isolation_level(1)
+            except ProgrammingError, e:
+                if re.match(
+                       'database "%s" could not be dropped' % db,
+                       e.pgerror.strip().split('ERROR:  ')[1]):
+                    # already done, no need to rerun
+                    print "The DB %s could not be dropped" % db
+                    return 0
 
         if createdb:
             try:

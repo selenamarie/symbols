@@ -33,10 +33,13 @@ class Module(DeclarativeBase):
     __tablename__ = 'modules'
 
     id = Column(u'id', Integer(), primary_key=True)
+    # These are a key
+    debug_id = Column('debug_id', Text())
+    name = Column('name', Text())
+    # remaining attributes
     os = Column('os', Text())
     arch = Column('arch', Text())
-    hexid = Column('hexid', Text())
-    name = Column('name', Text())
+    idx_unique_module = Index('idx_unique_module', debug_id, name)
 
 class File(DeclarativeBase):
     __tablename__ = 'files'
@@ -54,7 +57,7 @@ class Function(DeclarativeBase):
     size    = Column('size', Text())
     parameter_size   = Column('parameter_size', Text())
     name    = Column('name', Text())
-    filename = Column('filename', ForeignKey('files.id'))
+    module = Column('module', ForeignKey('modules.id'))
 
 class Line(DeclarativeBase):
     __tablename__ = 'lines'
@@ -64,21 +67,15 @@ class Line(DeclarativeBase):
     size = Column('size', Text())
     line = Column('line', Integer())
     filenum = Column('filenum', Integer())
-    function = Column('function', ForeignKey('functions.id'))
+    file = Column('file', ForeignKey('files.id'))
 
-class StackAddress(DeclarativeBase):
-    __tablename__ = 'stackaddresses'
-
-    id = Column(u'id', Integer(), primary_key=True)
-    address = Column('address', Text())
-    stackwalk_id = Column('stackwalk_id', ForeignKey('stackwalks.id'))
-
-class StackWalk(DeclarativeBase):
-
+class Stackwalk(DeclarativeBase):
     __tablename__ = 'stackwalks'
 
     id = Column(u'id', Integer(), primary_key=True)
-    stackwalk = Column('stackwalk', Text())
+    address = Column('address', Text())
+    stackwalk_data = Column('stackwalk_data', Text())
+    module = Column('module', ForeignKey('modules.id'))
 
 class SymbolDB():
 

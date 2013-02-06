@@ -65,6 +65,9 @@ class Symbol():
 
             m = re.search('^MODULE (\S+) (\S+) (\S+) (\S+)', line)
             if m:
+                module = self.symboldb.session.query(Module.id).filter_by(debug_id=m.group(3), name=m.group(4)).first()
+                if module:
+                    break
                 mod_id = self._add_module(m)
                 continue
 
@@ -85,8 +88,8 @@ class Symbol():
 
             m = re.search('^(\S+) (\S+) (\S+) (\S+)', line)
             if m:
-                file_number = self.symboldb.session.query(File.id).filter_by(number=m.group(4), module=mod_id)
-                line = self._add_line(m, file_number)
+                file_number = self.symboldb.session.query(File.id).filter_by(number=m.group(4), module=mod_id).first()
+                line = self._add_line(m, file_number.id)
                 continue
             print "bogus: %s" % line
 

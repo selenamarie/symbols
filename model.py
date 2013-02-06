@@ -82,6 +82,18 @@ class StackWalk(DeclarativeBase):
 
 class SymbolDB():
 
+    def __init__(self):
+        dropdb = True
+        createdb = True
+        db = "symbols"
+        sa_url = 'postgresql://selena@localhost/%s' % db
+
+        engine = create_engine(sa_url, implicit_returning=False)
+        self.engine = engine
+
+        session = sessionmaker(bind=engine)()
+        self.session = session
+
     def main(self):
         dropdb = True
         createdb = True

@@ -105,6 +105,8 @@ class Symbol():
                 continue
             print "bogus: %s" % line
 
+        self.symboldb.session.commit()
+
     def remove(self, debug_id, name):
         pass
 

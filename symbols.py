@@ -9,6 +9,14 @@ class Symbol():
     def __init__(self):
         self.symboldb = SymbolDB()
 
+    def _add_build(self, m):
+        try:
+            new_module = Module(os=m.group(1), arch=m.group(2), debug_id=m.group(3), name=m.group(4))
+            self.symboldb.session.add(new_module)
+        except ProgrammingError, e:
+            print e
+            return None
+
     def _add_module(self, m):
         try:
             new_module = Module(os=m.group(1), arch=m.group(2), debug_id=m.group(3), name=m.group(4))
@@ -28,6 +36,14 @@ class Symbol():
             return None
 
         return(new.id)
+
+    def _add_public(self, m, mod_id):
+        try:
+            new = Function(address=int("0x%s" % m.group(1), 16), size=m.group(2), name=m.group(3), module=mod_id, address_range="[%d, %d)" % (int("0x%s" % m.group(1), 16), int("0x%s" % m.group(1), 16) + int("0x%s" % m.group(2), 16) ))
+            self.symboldb.session.add(new)
+        except ProgrammingError, e:
+            print e
+            return None
 
     def _add_func(self, m, mod_id):
         try:
@@ -128,9 +144,7 @@ if __name__ == "__main__":
 
     print len(urls)
     for url in urls:
+        #if re.search('js.pdb', url):
         print "Adding %s" % url
         test.add(prefix + url)
-
-
-
 

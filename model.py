@@ -60,6 +60,19 @@ metadata = DeclarativeBase.metadata
 
 
 #################################
+class Build(DeclarativeBase):
+    __tablename__ = 'builds'
+
+    # http://mxr.mozilla.org/mozilla-central/source/Makefile.in#149
+    # $(MOZ_APP_NAME)-$(MOZ_APP_VERSION)-$(OS_TARGET)-$(BUILDID)-$(CPU_ARCH)$(EXTRA_BUILDID)-symbols.txt
+    id = Column(u'id', Integer(), primary_key=True)
+
+    moz_app_name = Column(u'moz_app_name', Text())
+    moz_app_version = Column(u'moz_app_version', Text())
+    os_target = Column(u'os_target', Text())
+    buildid = Column(u'buildid', Text())
+    cpu_arch_and_buildid = Column(u'cpu_arch_and_buildid', Text())
+
 class Module(DeclarativeBase):
     __tablename__ = 'modules'
 
@@ -71,6 +84,7 @@ class Module(DeclarativeBase):
     os = Column('os', Text())
     arch = Column('arch', Text())
     idx_unique_module = Index('idx_unique_module', debug_id, name)
+    build = column(u'build', Integer()) # FK to Builds
 
 class File(DeclarativeBase):
     __tablename__ = 'files'
@@ -99,6 +113,7 @@ class Public(DeclarativeBase):
     size = Column('size', Text())
     address_range = Column('address_range', INT8RANGE())
     name = Column('filenum', Integer())
+    module = Column('module', Integer())
 
 class Line(DeclarativeBase):
     __tablename__ = 'lines'

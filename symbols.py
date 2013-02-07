@@ -45,9 +45,9 @@ class Symbol():
             print e
             return None
 
-    def _add_stack(self, m, module, next_stack):
+    def _add_stack(self, m, module):
         try:
-            new = Stackwalk(address=int("0x%s" % m.group(2), 16), stackwalk_data=m.group(4), module=module)
+            new = Stackwalk(address=int("0x%s" % m.group(2), 16), stackwalk_data=m.group(0), module=module)
             self.symboldb.session.add(new)
         except ProgrammingError, e:
             print e
@@ -58,10 +58,11 @@ class Symbol():
         symbols = page.read().split('\n')
         page.close()
         module = None
+        mod_id = None
         last_func = None
         last_line = None
         last_public = None
-        last_stack = None
+        skip = 0
 
         for line in symbols:
             if line is None:
@@ -71,11 +72,12 @@ class Symbol():
             if m:
                 module = self.symboldb.session.query(Module.id).filter_by(debug_id=m.group(3), name=m.group(4)).first()
                 if module:
+                    skip = 1
                     break
                 mod_id = self._add_module(m)
                 continue
 
-            m = re.search('^FILE (\S+) (\S+)', line)
+            m = re.search('^FILE (\S+) (.*)', line)
             if m:
                 file_id = self._add_file(m, mod_id)
                 continue
@@ -85,13 +87,10 @@ class Symbol():
                 func_id = self._add_func(m, mod_id)
                 continue
 
+            # XXX Figure out how to handle ranges for stacks, also non WIN stacks
             m = re.search('^STACK WIN (\S+) (\S+) (\S+) (.*)', line)
             if m:
-                if last_stack is None:
-                    last_stack = m
-                    continue
-                stack_id = self._add_stack(last_stack, mod_id, m)
-                last_stack = m
+                stack_id = self._add_stack(m, mod_id)
                 continue
 
             # XXX
@@ -105,10 +104,6 @@ class Symbol():
                 line = self._add_line(m, file_number.id)
                 continue
             print "bogus: %s" % line
-
-        # Take care of the last stack walk line
-        stack_id = self._add_stack(last_stack, mod_id, m)
-        self.symboldb.session.commit()
 
     def remove(self, debug_id, name):
         pass

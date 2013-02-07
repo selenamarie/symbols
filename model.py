@@ -116,7 +116,7 @@ class Stackwalk(DeclarativeBase):
 
     id = Column(u'id', Integer(), primary_key=True)
     address = Column('address', BigInteger())
-    address_range = Column('address_range', INT8RANGE())
+    #address_range = Column('address_range', INT8RANGE())
     stackwalk_data = Column('stackwalk_data', Text())
     module = Column('module', Integer())
 

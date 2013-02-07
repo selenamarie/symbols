@@ -1,2 +1,22 @@
 
-* model.py - creates a database for the symbols data
+
+
+This is real rough. :)
+
+Start by creating a virtualenv & pip install -r requirements.txt
+
+Make sure you have a local copy of PostgreSQL running.
+
+Edit model.py and update sa_url and dsn in three places to fix connection params (sorry).
+
+Then, run: ./model.py to create a PostgreSQL database
+
+Then, edit __main__ in symbols.py to point it at a directory of some files containing paths to symbol files. :)
+
+BUGS
+* PUBLIC records aren't added yet
+* Need to implement ranges for STACK records
+
+TODO
+* Make this configman'd
+* Add remove() capability

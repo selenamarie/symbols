@@ -22,6 +22,37 @@ try:
 except ImportError:
     from sqlalchemy.databases.postgres import *
 
+class CITEXT(types.UserDefinedType):
+
+    def get_col_spec(self):
+        return 'CITEXT'
+
+    def bind_processor(self, dialect):
+        def process(value):
+            return value
+        return process
+
+    def result_processor(self, dialect, coltype):
+        def process(value):
+            return value
+        return process
+
+
+class INT8RANGE(types.UserDefinedType):
+
+    def get_col_spec(self):
+        return 'INT8RANGE'
+
+    def bind_processor(self, dialect):
+        def process(value):
+            return value
+        return process
+
+    def result_processor(self, dialect, coltype):
+        def process(value):
+            return value
+        return process
+
 #######################################
 
 DeclarativeBase = declarative_base()
@@ -47,7 +78,7 @@ class File(DeclarativeBase):
     id = Column(u'id', Integer(), primary_key=True)
     number = Column('number', Integer())
     name = Column('name', Text())
-    module = Column('module', ForeignKey('modules.id'))
+    module = Column('module', Integer())
 
 class Function(DeclarativeBase):
     __tablename__ = 'functions'
@@ -55,9 +86,19 @@ class Function(DeclarativeBase):
     id = Column(u'id', Integer(), primary_key=True)
     address = Column('address', BigInteger())
     size    = Column('size', Text())
+    address_range = Column('address_range', INT8RANGE())
     parameter_size   = Column('parameter_size', Text())
     name    = Column('name', Text())
-    module = Column('module', ForeignKey('modules.id'))
+    module = Column('module', Integer())
+
+class Public(DeclarativeBase):
+    __tablename__ = 'publics'
+
+    id = Column(u'id', Integer(), primary_key=True)
+    address = Column('address', BigInteger())
+    size = Column('size', Text())
+    address_range = Column('address_range', INT8RANGE())
+    name = Column('filenum', Integer())
 
 class Line(DeclarativeBase):
     __tablename__ = 'lines'
@@ -65,17 +106,19 @@ class Line(DeclarativeBase):
     id = Column(u'id', Integer(), primary_key=True)
     address = Column('address', BigInteger())
     size = Column('size', Text())
+    address_range = Column('address_range', INT8RANGE())
     line = Column('line', Integer())
     filenum = Column('filenum', Integer())
-    file = Column('file', ForeignKey('files.id'))
+    file = Column('file', Integer())
 
 class Stackwalk(DeclarativeBase):
     __tablename__ = 'stackwalks'
 
     id = Column(u'id', Integer(), primary_key=True)
     address = Column('address', BigInteger())
+    address_range = Column('address_range', INT8RANGE())
     stackwalk_data = Column('stackwalk_data', Text())
-    module = Column('module', ForeignKey('modules.id'))
+    module = Column('module', Integer())
 
 class SymbolDB():
 

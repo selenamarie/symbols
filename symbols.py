@@ -14,7 +14,8 @@ class Symbol():
             new_module = Module(os=m.group(1), arch=m.group(2), debug_id=m.group(3), name=m.group(4))
             self.symboldb.session.add(new_module)
             self.symboldb.session.commit()
-        except:
+        except ProgrammingError, e:
+            print e
             return None
 
         return(new_module.id)
@@ -24,35 +25,38 @@ class Symbol():
             new = File(number=m.group(1), name=m.group(2), module=mod_id)
             self.symboldb.session.add(new)
             self.symboldb.session.commit()
-        except:
+        except ProgrammingError, e:
+            print e
             return None
 
         return(new.id)
 
     def _add_func(self, m, mod_id):
         try:
-            new = Func(address=m.group(1), size=m.group(2), line=m.group(3), filenum=m.group(4), module=mod_id)
+            new = Function(address=int("0x%s" % m.group(1), 16), size=m.group(2), parameter_size=m.group(3), name=m.group(4), module=mod_id)
             self.symboldb.session.add(new)
             self.symboldb.session.commit()
-        except:
+        except ProgrammingError, e:
+            print e
             return None
 
     def _add_line(self, m, file):
         try:
-            new = File(address=m.group(1), size=m.group(2), line=m.group(3), filenum=m.group(4), file=file)
+            new = Line(address=int("0x%s" % m.group(1), 16), size=m.group(2), line=m.group(3), filenum=m.group(4), file=file)
+            print new.address
             self.symboldb.session.add(new)
             self.symboldb.session.commit()
-        except:
+        except ProgrammingError, e:
+            print e
             return None
 
     def _add_stack(self, m, module):
         try:
-            new = Stackwalk(address=m.group(2), stackwalk_data=m.group(4), module=module)
+            new = Stackwalk(address=int("0x%s" % m.group(2), 16), stackwalk_data=m.group(4), module=module)
             self.symboldb.session.add(new)
             self.symboldb.session.commit()
         except:
             return None
-
 
     def add(self, url):
         page = urllib.urlopen(url)
@@ -92,6 +96,9 @@ class Symbol():
                 line = self._add_line(m, file_number.id)
                 continue
             print "bogus: %s" % line
+
+    def remove(self, debug_id, name):
+        pass
 
 if __name__ == "__main__":
     test = Symbol()

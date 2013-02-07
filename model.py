@@ -53,7 +53,7 @@ class Function(DeclarativeBase):
     __tablename__ = 'functions'
 
     id = Column(u'id', Integer(), primary_key=True)
-    address = Column('address', Text())
+    address = Column('address', BigInteger())
     size    = Column('size', Text())
     parameter_size   = Column('parameter_size', Text())
     name    = Column('name', Text())
@@ -63,7 +63,7 @@ class Line(DeclarativeBase):
     __tablename__ = 'lines'
 
     id = Column(u'id', Integer(), primary_key=True)
-    address = Column('address', Text())
+    address = Column('address', BigInteger())
     size = Column('size', Text())
     line = Column('line', Integer())
     filenum = Column('filenum', Integer())
@@ -73,7 +73,7 @@ class Stackwalk(DeclarativeBase):
     __tablename__ = 'stackwalks'
 
     id = Column(u'id', Integer(), primary_key=True)
-    address = Column('address', Text())
+    address = Column('address', BigInteger())
     stackwalk_data = Column('stackwalk_data', Text())
     module = Column('module', ForeignKey('modules.id'))
 

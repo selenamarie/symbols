@@ -22,6 +22,8 @@ try:
 except ImportError:
     from sqlalchemy.databases.postgres import *
 
+from config import sa_url
+
 class CITEXT(types.UserDefinedType):
 
     def get_col_spec(self):
@@ -84,7 +86,7 @@ class Module(DeclarativeBase):
     os = Column('os', Text())
     arch = Column('arch', Text())
     idx_unique_module = Index('idx_unique_module', debug_id, name)
-    build = column(u'build', Integer()) # FK to Builds
+    build = Column(u'build', Integer()) # FK to Builds
 
 class File(DeclarativeBase):
     __tablename__ = 'files'
@@ -141,9 +143,9 @@ class SymbolDB():
         dropdb = True
         createdb = True
         db = "symbols"
-        sa_url = 'postgresql://selena@localhost/%s' % db
+        sa_url_db = sa_url + db
 
-        engine = create_engine(sa_url, implicit_returning=False)
+        engine = create_engine(sa_url_db, implicit_returning=False)
         self.engine = engine
 
         session = sessionmaker(bind=engine)()
@@ -153,11 +155,9 @@ class SymbolDB():
         dropdb = True
         createdb = True
         db = "symbols"
-        sa_url = 'postgresql://selena@localhost/'
 
-        dsn = 'postgresql://selena@localhost/template1'
-
-        engine = create_engine(sa_url, implicit_returning=False)
+        sa_url_db = sa_url + "template1"
+        engine = create_engine(sa_url_db, implicit_returning=False)
         self.engine = engine
 
         session = sessionmaker(bind=engine)()
@@ -190,9 +190,8 @@ class SymbolDB():
                     return 0
                 raise
 
-        #sa_url = url_template + '/%s' % db
-        sa_url = sa_url + '%s' % db
-        self.engine = create_engine(sa_url, implicit_returning=False)
+        sa_url_db = sa_url + db
+        self.engine = create_engine(sa_url_db, implicit_returning=False)
 
         self.metadata = DeclarativeBase.metadata
         self.metadata.bind = self.engine

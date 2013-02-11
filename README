@@ -7,7 +7,7 @@ Start by creating a virtualenv & pip install -r requirements.txt
 
 Make sure you have a local copy of PostgreSQL running.
 
-Edit model.py and update sa_url and dsn in three places to fix connection params (sorry).
+Copy config.py.dist to config.py and edit sa_url to fix connection params.
 
 Then, run: ./model.py to create a PostgreSQL database
 

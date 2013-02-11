@@ -166,7 +166,7 @@ class SymbolDB():
         if dropdb:
             try:
                 session.connection().connection.set_isolation_level(0)
-                session.execute('DROP DATABASE %s' % db)
+                session.execute('DROP DATABASE IF EXISTS %s' % db)
                 session.connection().connection.set_isolation_level(1)
             except ProgrammingError, e:
                 if re.match(

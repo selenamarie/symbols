@@ -84,7 +84,7 @@ class Module(DeclarativeBase):
     os = Column('os', Text())
     arch = Column('arch', Text())
     idx_unique_module = Index('idx_unique_module', debug_id, name)
-    build = column(u'build', Integer()) # FK to Builds
+    build = Column(u'build', Integer()) # FK to Builds
 
 class File(DeclarativeBase):
     __tablename__ = 'files'

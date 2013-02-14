@@ -11,25 +11,56 @@ class Symbol():
 
     def _add_build(self, m):
         try:
-            new_module = Module(os=m.group(1), arch=m.group(2), debug_id=m.group(3), name=m.group(4))
-            self.symboldb.session.add(new_module)
+            new = Build(os=m.group(1), arch=m.group(2), debug_id=m.group(3), name=m.group(4))
+            self.symboldb.session.add(new)
+            self.symboldb.session.commit()
         except ProgrammingError, e:
             print e
             return None
+        return(new.id)
 
     def _add_module(self, m):
         try:
-            new_module = Module(os=m.group(1), arch=m.group(2), debug_id=m.group(3), name=m.group(4))
-            self.symboldb.session.add(new_module)
+            new = Module(os=m.group(1), arch=m.group(2), debug_id=m.group(3), name=m.group(4))
+            self.symboldb.session.add(new)
+            self.symboldb.session.commit()
         except ProgrammingError, e:
             print e
             return None
+        return(new.id)
 
-        return(new_module.id)
 
-    def _add_file(self, m, mod_id):
+    def _add_file(self, m, module):
         try:
-            new = File(number=m.group(1), name=m.group(2), module=mod_id)
+            new = File(number=m.group(1), name=m.group(2), module=module)
+            self.symboldb.session.add(new)
+            self.symboldb.session.commit()
+        except ProgrammingError, e:
+            print e
+            return None
+        return(new.id)
+
+    def _add_public(self, m, module):
+        try:
+            new = Public(address=int("0x%s" % m.group(1), 16),
+                           size=m.group(2), name=m.group(3),
+                           module=module,
+                           address_range="[%d, %d)" % (int("0x%s" % m.group(1), 16), int("0x%s" % m.group(1), 16) + int("0x%s" % m.group(2), 16) ))
+            self.symboldb.session.add(new)
+        except ProgrammingError, e:
+            print e
+            return None
+        return(new.id)
+
+
+    def _add_func(self, m, module):
+        try:
+            new = Function(address=int("0x%s" % m.group(1), 16),
+                           size=m.group(2),
+                           parameter_size=m.group(3),
+                           name=m.group(4),
+                           module=module,
+                           address_range="[%d, %d)" % (int("0x%s" % m.group(1), 16), int("0x%s" % m.group(1), 16) + int("0x%s" % m.group(2), 16) ))
             self.symboldb.session.add(new)
         except ProgrammingError, e:
             print e
@@ -37,29 +68,20 @@ class Symbol():
 
         return(new.id)
 
-    def _add_public(self, m, mod_id):
+    def _add_line(self, m, filename):
         try:
-            new = Function(address=int("0x%s" % m.group(1), 16), size=m.group(2), name=m.group(3), module=mod_id, address_range="[%d, %d)" % (int("0x%s" % m.group(1), 16), int("0x%s" % m.group(1), 16) + int("0x%s" % m.group(2), 16) ))
+            new = Line(address=int("0x%s" % m.group(1), 16),
+                       size=m.group(2),
+                       line=m.group(3),
+                       filenum=m.group(4),
+                       file=filename,
+                       address_range="[%d, %d)" % (int("0x%s" % m.group(1), 16), int("0x%s" % m.group(1), 16) + int("0x%s" % m.group(2), 16) ))
             self.symboldb.session.add(new)
         except ProgrammingError, e:
             print e
             return None
 
-    def _add_func(self, m, mod_id):
-        try:
-            new = Function(address=int("0x%s" % m.group(1), 16), size=m.group(2), parameter_size=m.group(3), name=m.group(4), module=mod_id, address_range="[%d, %d)" % (int("0x%s" % m.group(1), 16), int("0x%s" % m.group(1), 16) + int("0x%s" % m.group(2), 16) ))
-            self.symboldb.session.add(new)
-        except ProgrammingError, e:
-            print e
-            return None
-
-    def _add_line(self, m, file):
-        try:
-            new = Line(address=int("0x%s" % m.group(1), 16), size=m.group(2), line=m.group(3), filenum=m.group(4), file=file, address_range="[%d, %d)" % (int("0x%s" % m.group(1), 16), int("0x%s" % m.group(1), 16) + int("0x%s" % m.group(2), 16) ))
-            self.symboldb.session.add(new)
-        except ProgrammingError, e:
-            print e
-            return None
+        return(new.id)
 
     def _add_stack(self, m, module):
         try:
@@ -68,6 +90,8 @@ class Symbol():
         except ProgrammingError, e:
             print e
             return None
+
+        return(new.id)
 
     def add(self, url):
         page = urllib.urlopen(url)
@@ -90,6 +114,7 @@ class Symbol():
                 if module:
                     skip = 1
                     break
+
                 mod_id = self._add_module(m)
                 continue
 
@@ -119,7 +144,6 @@ class Symbol():
                 file_number = self.symboldb.session.query(File.id).filter_by(number=m.group(4), module=mod_id).first()
                 line = self._add_line(m, file_number.id)
                 continue
-            print "bogus: %s" % line
 
         self.symboldb.session.commit()
 

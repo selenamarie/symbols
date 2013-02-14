@@ -3,6 +3,7 @@ from model import *
 
 import urllib2 as urllib
 import re
+import fileinput
 
 class Symbol():
 
@@ -133,14 +134,11 @@ if __name__ == "__main__":
     prefix = 'http://symbols.mozilla.org/firefox/'
     import glob
     urls = []
-    for f in glob.glob("/tmp/blahrg/*.txt"):
-        pfile = open(f)
-        paths = pfile.read().split('\n')
-        pfile.close()
-        for path in paths:
-            if re.search('pd_', path):
-                continue
-            urls.append(path)
+    for line in fileinput.input():
+        line = line.rstrip()
+        if not line.endswith(".sym"):
+            continue
+        urls.append(line)
 
     print len(urls)
     for url in urls:

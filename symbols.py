@@ -40,7 +40,6 @@ class Symbol():
         except ProgrammingError, e:
             print e
             return None
-        return(new.id)
 
     def _add_public(self, m, module):
         try:
@@ -70,13 +69,12 @@ class Symbol():
 
         return(new.id)
 
-    def _add_line(self, m, filename):
+    def _add_line(self, m):
         try:
             new = Line(address=int("0x%s" % m.group(1), 16),
                        size=m.group(2),
                        line=m.group(3),
-                       filenum=m.group(4),
-                       file=filename,
+                       file=m.group(4),
                        address_range="[%d, %d)" % (int("0x%s" % m.group(1), 16), int("0x%s" % m.group(1), 16) + int("0x%s" % m.group(2), 16) ))
             self.symboldb.session.add(new)
         except ProgrammingError, e:
@@ -122,7 +120,7 @@ class Symbol():
 
             m = re.search('^FILE (\S+) (.*)', line)
             if m:
-                file_id = self._add_file(m, mod_id)
+                self._add_file(m, mod_id)
                 continue
 
             m = re.search('^FUNC (\S+) (\S+) (\S+) (\S+)', line)
@@ -143,8 +141,7 @@ class Symbol():
 
             m = re.search('^(\S+) (\S+) (\S+) (\S+)', line)
             if m:
-                file_number = self.symboldb.session.query(File.id).filter_by(number=m.group(4), module=mod_id).first()
-                line = self._add_line(m, file_number.id)
+                line = self._add_line(m)
                 continue
 
         self.symboldb.session.commit()

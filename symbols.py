@@ -1,5 +1,6 @@
 
 from model import *
+from config import symbol_url
 
 import urllib2 as urllib
 import re
@@ -154,8 +155,6 @@ class Symbol():
 if __name__ == "__main__":
     test = Symbol()
 
-    # urls = ['http://symbols.mozilla.org/firefox/firefox.pdb/E40644FDC4D040749962D4C8EB8DF3212/firefox.sym']
-    prefix = 'http://symbols.mozilla.org/firefox/'
     import glob
     urls = []
     for line in fileinput.input():
@@ -168,5 +167,5 @@ if __name__ == "__main__":
     for url in urls:
         #if re.search('js.pdb', url):
         print "Adding %s" % url
-        test.add(prefix + url)
+        test.add(symbol_url + url)
 

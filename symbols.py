@@ -109,6 +109,10 @@ class Symbol():
             if line is None:
                 break
 
+            line = line.rstrip()
+            if not line:
+                continue
+
             m = re.search('^MODULE (\S+) (\S+) (\S+) (\S+)', line)
             if m:
                 module = self.symboldb.session.query(Module.id).filter_by(debug_id=m.group(3), name=m.group(4)).first()

@@ -91,10 +91,9 @@ class Module(DeclarativeBase):
 class File(DeclarativeBase):
     __tablename__ = 'files'
 
-    id = Column(u'id', Integer(), primary_key=True)
-    number = Column('number', Integer())
+    number = Column('number', Integer(), primary_key=True, autoincrement=False)
+    module = Column('module', Integer(), primary_key=True, autoincrement=False)
     name = Column('name', Text())
-    module = Column('module', Integer())
 
 class Function(DeclarativeBase):
     __tablename__ = 'functions'
@@ -125,8 +124,8 @@ class Line(DeclarativeBase):
     size = Column('size', Text())
     address_range = Column('address_range', INT8RANGE())
     line = Column('line', Integer())
-    filenum = Column('filenum', Integer())
     file = Column('file', Integer())
+    module = Column('module', Integer())
 
 class Stackwalk(DeclarativeBase):
     __tablename__ = 'stackwalks'

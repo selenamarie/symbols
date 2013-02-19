@@ -1,5 +1,6 @@
 
 from model import *
+from config import symbol_url
 
 import urllib2 as urllib
 import re
@@ -39,7 +40,6 @@ class Symbol():
         except ProgrammingError, e:
             print e
             return None
-        return(new.id)
 
     def _add_public(self, m, module):
         try:
@@ -69,13 +69,13 @@ class Symbol():
 
         return(new.id)
 
-    def _add_line(self, m, filename):
+    def _add_line(self, m, module):
         try:
             new = Line(address=int("0x%s" % m.group(1), 16),
                        size=m.group(2),
                        line=m.group(3),
-                       filenum=m.group(4),
-                       file=filename,
+                       file=m.group(4),
+                       module=module,
                        address_range="[%d, %d)" % (int("0x%s" % m.group(1), 16), int("0x%s" % m.group(1), 16) + int("0x%s" % m.group(2), 16) ))
             self.symboldb.session.add(new)
         except ProgrammingError, e:
@@ -121,7 +121,7 @@ class Symbol():
 
             m = re.search('^FILE (\S+) (.*)', line)
             if m:
-                file_id = self._add_file(m, mod_id)
+                self._add_file(m, mod_id)
                 continue
 
             m = re.search('^FUNC (\S+) (\S+) (\S+) (\S+)', line)
@@ -142,8 +142,7 @@ class Symbol():
 
             m = re.search('^(\S+) (\S+) (\S+) (\S+)', line)
             if m:
-                file_number = self.symboldb.session.query(File.id).filter_by(number=m.group(4), module=mod_id).first()
-                line = self._add_line(m, file_number.id)
+                line = self._add_line(m, mod_id)
                 continue
 
         self.symboldb.session.commit()
@@ -154,8 +153,6 @@ class Symbol():
 if __name__ == "__main__":
     test = Symbol()
 
-    # urls = ['http://symbols.mozilla.org/firefox/firefox.pdb/E40644FDC4D040749962D4C8EB8DF3212/firefox.sym']
-    prefix = 'http://symbols.mozilla.org/firefox/'
     import glob
     urls = []
     for line in fileinput.input():
@@ -168,5 +165,5 @@ if __name__ == "__main__":
     for url in urls:
         #if re.search('js.pdb', url):
         print "Adding %s" % url
-        test.add(prefix + url)
+        test.add(symbol_url + url)
 

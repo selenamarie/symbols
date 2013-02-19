@@ -69,12 +69,13 @@ class Symbol():
 
         return(new.id)
 
-    def _add_line(self, m):
+    def _add_line(self, m, module):
         try:
             new = Line(address=int("0x%s" % m.group(1), 16),
                        size=m.group(2),
                        line=m.group(3),
                        file=m.group(4),
+                       module=module,
                        address_range="[%d, %d)" % (int("0x%s" % m.group(1), 16), int("0x%s" % m.group(1), 16) + int("0x%s" % m.group(2), 16) ))
             self.symboldb.session.add(new)
         except ProgrammingError, e:
@@ -141,7 +142,7 @@ class Symbol():
 
             m = re.search('^(\S+) (\S+) (\S+) (\S+)', line)
             if m:
-                line = self._add_line(m)
+                line = self._add_line(m, mod_id)
                 continue
 
         self.symboldb.session.commit()

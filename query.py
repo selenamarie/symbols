@@ -17,28 +17,29 @@ def get_module_id(debug_file, debug_id):
     return None
 
 def get_function_at_address(module_id, address):
+    """
+    Returns function name, or None if no function was found.
+    """
     res = db.session.query(model.Function.name).filter(
         and_(model.Function.module == module_id,
              model.Function.address_range.op("@>")(cast(address, BIGINT)))
-        ).first() # should be one(), but data may be screwy?
+        ).first()
     if res:
         return res[0]
     return None
 
 def get_line_at_address(module_id, address):
-    res = db.session.query(model.Line.line, model.Line.file).filter(
-        and_(model.Line.module == module_id,
+    """
+    Returns (file name, line number), or None if no line data was found.
+    """
+    res = db.session.query(model.File.name, model.Line.line).filter(
+        and_(model.Line.file == model.File.number,
+             model.Line.module == module_id,
+             model.File.module == module_id,
              model.Line.address_range.op("@>")(cast(address, BIGINT)))
         ).first()
     if res:
         return res
-    return None
-
-def get_file_by_number(module_id, filenum):
-    res = db.session.query(model.File.name).filter(
-        model.File.module == module_id).first()
-    if res:
-        return res[0]
     return None
 
 def get_public_at_address(module_id, address):
@@ -70,12 +71,7 @@ def main():
             debug_file, debug_id, address = rest.split(",")
             res = get_line_at_address(modules[debug_file + debug_id], int(address, 16))
             if res:
-                print "LINE %d:%d" % res
-        elif what == "getfile":
-            debug_file, debug_id, filenum = rest.split(",")
-            f = get_file_by_number(modules[debug_file + debug_id], int(filenum))
-            if f:
-                print "FILE %s" % f
+                print "LINE %s:%d" % res
         elif what == "getpublic":
             pass
         elif what == "getstackwin":

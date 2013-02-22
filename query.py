@@ -43,7 +43,12 @@ def get_line_at_address(module_id, address):
     return None
 
 def get_public_at_address(module_id, address):
-    # TODO
+    res = db.session.query(model.Public.name).filter(
+        and_(model.Public.module == module_id,
+             model.Public.address < address)
+        ).order_by(model.Public.address.desc()).limit(1).first()
+    if res:
+        return res[0]
     return None
 
 def get_stack_data_at_address(module_id, address):
@@ -73,7 +78,10 @@ def main():
             if res:
                 print "LINE %s:%d" % res
         elif what == "getpublic":
-            pass
+            debug_file, debug_id, address = rest.split(",")
+            pub = get_public_at_address(modules[debug_file + debug_id], int(address, 16))
+            if pub:
+                print "PUBLIC %s" % pub
         elif what == "getstackwin":
             pass
         elif what == "getstackcfi":

@@ -111,9 +111,8 @@ class Public(DeclarativeBase):
 
     id = Column(u'id', Integer(), primary_key=True)
     address = Column('address', BigInteger())
-    size = Column('size', Text())
-    address_range = Column('address_range', INT8RANGE())
-    name = Column('filenum', Integer())
+    parameter_size = Column('parameter_size', Integer())
+    name = Column('name', Text())
     module = Column('module', Integer())
 
 class Line(DeclarativeBase):

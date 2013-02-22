@@ -43,16 +43,13 @@ class Symbol():
 
     def _add_public(self, m, module):
         try:
-            new = Public(address=int("0x%s" % m.group(1), 16),
-                           size=m.group(2), name=m.group(3),
-                           module=module,
-                           address_range="[%d, %d)" % (int("0x%s" % m.group(1), 16), int("0x%s" % m.group(1), 16) + int("0x%s" % m.group(2), 16) ))
+            new = Public(address=int(m.group(1), 16),
+                         parameter_size=int(m.group(2), 16),
+                         name=m.group(3),
+                         module=module)
             self.symboldb.session.add(new)
         except ProgrammingError, e:
             print e
-            return None
-        return(new.id)
-
 
     def _add_func(self, m, module):
         try:
@@ -139,9 +136,9 @@ class Symbol():
                 stack_id = self._add_stack(m, mod_id)
                 continue
 
-            # XXX
-            m = re.search('^PUBLIC (\S+) (\S+) (\S+)', line)
+            m = re.search('^PUBLIC (\S+) (\S+) (.+)', line)
             if m:
+                self._add_public(m, mod_id)
                 continue
 
             m = re.search('^(\S+) (\S+) (\S+) (\S+)', line)

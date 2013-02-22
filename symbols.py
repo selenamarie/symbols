@@ -81,12 +81,12 @@ class Symbol():
 
         return(new.id)
 
-    def _add_stack(self, m, module):
+    def _add_stack(self, module, type, address, size, data):
         try:
-            new = Stackdata(address=int(m.group(2), 16),
-                            type="WIN",
-                            address_range="[%d, %d)" % (int(m.group(2), 16), int(m.group(2), 16) + int(m.group(3), 16)),
-                            data=m.group(0),
+            new = Stackdata(address=address,
+                            type=type,
+                            address_range="[%d, %d)" % (address, address + size),
+                            data=data,
                             module=module)
             self.symboldb.session.add(new)
         except ProgrammingError, e:
@@ -131,9 +131,12 @@ class Symbol():
                 func_id = self._add_func(m, mod_id)
                 continue
 
-            m = re.search('^STACK WIN (\S+) (\S+) (\S+) (.*)', line)
+            m = re.search('^STACK WIN ((\S+) (\S+) (\S+) .*)', line)
             if m:
-                stack_id = self._add_stack(m, mod_id)
+                address=int(m.group(3), 16)
+                size=int(m.group(4), 16)
+                data=m.group(1)
+                stack_id = self._add_stack(mod_id, "WIN", address, size, data)
                 continue
 
             m = re.search('^PUBLIC (\S+) (\S+) (.+)', line)

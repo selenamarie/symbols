@@ -81,11 +81,11 @@ class Module(DeclarativeBase):
     id = Column(u'id', Integer(), primary_key=True)
     # These are a key
     debug_id = Column('debug_id', Text())
-    name = Column('name', Text())
+    debug_file = Column('debug_file', Text())
     # remaining attributes
     os = Column('os', Text())
     arch = Column('arch', Text())
-    idx_unique_module = Index('idx_unique_module', debug_id, name)
+    idx_unique_module = Index('idx_unique_module', debug_id, debug_file)
     build = Column(u'build', Integer()) # FK to Builds
 
 class File(DeclarativeBase):

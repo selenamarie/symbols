@@ -21,9 +21,10 @@ class Symbol():
             return None
         return(new.id)
 
-    def _add_module(self, m):
+    def _add_module(self, os, arch, debug_id, debug_file):
         try:
-            new = Module(os=m.group(1), arch=m.group(2), debug_id=m.group(3), name=m.group(4))
+            new = Module(os=os, arch=arch,
+                         debug_id=debug_id, debug_file=debug_file)
             self.symboldb.session.add(new)
             self.symboldb.session.commit()
         except ProgrammingError, e:
@@ -111,14 +112,19 @@ class Symbol():
             if not line:
                 continue
 
-            m = re.search('^MODULE (\S+) (\S+) (\S+) (\S+)', line)
+            m = re.search('^MODULE (\S+) (\S+) (\S+) (.+)', line)
             if m:
-                module = self.symboldb.session.query(Module.id).filter_by(debug_id=m.group(3), name=m.group(4)).first()
+                os=m.group(1)
+                arch=m.group(2)
+                debug_id=m.group(3)
+                debug_file=m.group(4)
+                module = self.symboldb.session.query(Module.id).filter_by(
+                    debug_id=debug_id, debug_file=debug_file).first()
                 if module:
                     skip = 1
                     break
 
-                mod_id = self._add_module(m)
+                mod_id = self._add_module(os, arch, debug_id, debug_file)
                 continue
 
             m = re.search('^FILE (\S+) (.*)', line)

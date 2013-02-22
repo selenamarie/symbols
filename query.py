@@ -10,7 +10,7 @@ db = model.SymbolDB()
 
 def get_module_id(debug_file, debug_id):
     res = db.session.query(model.Module.id).filter(
-        and_(model.Module.name == debug_file,
+        and_(model.Module.debug_file == debug_file,
              model.Module.debug_id == debug_id)).first()
     if res:
         return res[0]

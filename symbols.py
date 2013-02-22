@@ -83,13 +83,14 @@ class Symbol():
 
     def _add_stack(self, m, module):
         try:
-            new = Stackwalk(address=int("0x%s" % m.group(2), 16), stackwalk_data=m.group(0), module=module)
+            new = Stackdata(address=int(m.group(2), 16),
+                            type="WIN",
+                            address_range="[%d, %d)" % (int(m.group(2), 16), int(m.group(2), 16) + int(m.group(3), 16)),
+                            data=m.group(0),
+                            module=module)
             self.symboldb.session.add(new)
         except ProgrammingError, e:
             print e
-            return None
-
-        return(new.id)
 
     def add(self, url):
         page = urllib.urlopen(url)
@@ -130,7 +131,6 @@ class Symbol():
                 func_id = self._add_func(m, mod_id)
                 continue
 
-            # XXX Figure out how to handle ranges for stacks, also non WIN stacks
             m = re.search('^STACK WIN (\S+) (\S+) (\S+) (.*)', line)
             if m:
                 stack_id = self._add_stack(m, mod_id)

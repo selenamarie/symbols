@@ -51,9 +51,13 @@ def get_public_at_address(module_id, address):
         return res[0]
     return None
 
-def get_stack_data_at_address(module_id, address):
-    # TODO
-    # TODO: distinguish between STACK WIN and STACK CFI
+def get_stack_win_data_at_address(module_id, address):
+    res = db.session.query(model.Stackdata.data).filter(
+        and_(model.Stackdata.module == module_id,
+             model.Stackdata.address_range.op("@>")(cast(address, BIGINT)))
+        ).first()
+    if res:
+        return res[0]
     return None
 
 def main():

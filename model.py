@@ -81,60 +81,56 @@ class Module(DeclarativeBase):
     id = Column(u'id', Integer(), primary_key=True)
     # These are a key
     debug_id = Column('debug_id', Text())
-    name = Column('name', Text())
+    debug_file = Column('debug_file', Text())
     # remaining attributes
     os = Column('os', Text())
     arch = Column('arch', Text())
-    idx_unique_module = Index('idx_unique_module', debug_id, name)
+    idx_unique_module = Index('idx_unique_module', debug_id, debug_file)
     build = Column(u'build', Integer()) # FK to Builds
 
 class File(DeclarativeBase):
     __tablename__ = 'files'
 
-    number = Column('number', Integer(), primary_key=True, autoincrement=False)
     module = Column('module', Integer(), primary_key=True, autoincrement=False)
+    number = Column('number', Integer(), primary_key=True, autoincrement=False)
     name = Column('name', Text())
 
 class Function(DeclarativeBase):
     __tablename__ = 'functions'
 
     id = Column(u'id', Integer(), primary_key=True)
-    address = Column('address', BigInteger())
-    size    = Column('size', Text())
-    address_range = Column('address_range', INT8RANGE())
-    parameter_size   = Column('parameter_size', Text())
-    name    = Column('name', Text())
     module = Column('module', Integer())
+    name    = Column('name', Text())
+    address_range = Column('address_range', INT8RANGE())
+    parameter_size   = Column('parameter_size', Integer())
 
 class Public(DeclarativeBase):
     __tablename__ = 'publics'
 
     id = Column(u'id', Integer(), primary_key=True)
-    address = Column('address', BigInteger())
-    size = Column('size', Text())
-    address_range = Column('address_range', INT8RANGE())
-    name = Column('filenum', Integer())
     module = Column('module', Integer())
+    name = Column('name', Text())
+    address = Column('address', BigInteger())
+    parameter_size = Column('parameter_size', Integer())
 
 class Line(DeclarativeBase):
     __tablename__ = 'lines'
 
     id = Column(u'id', Integer(), primary_key=True)
-    address = Column('address', BigInteger())
-    size = Column('size', Text())
+    module = Column('module', Integer())
     address_range = Column('address_range', INT8RANGE())
     line = Column('line', Integer())
     file = Column('file', Integer())
-    module = Column('module', Integer())
 
-class Stackwalk(DeclarativeBase):
-    __tablename__ = 'stackwalks'
+class Stackdata(DeclarativeBase):
+    __tablename__ = 'stackdata'
 
     id = Column(u'id', Integer(), primary_key=True)
-    address = Column('address', BigInteger())
-    #address_range = Column('address_range', INT8RANGE())
-    stackwalk_data = Column('stackwalk_data', Text())
     module = Column('module', Integer())
+    type = Column(Enum("WIN", "CFI INIT", "CFI", name="stack_type"))
+    address = Column('address', BigInteger())
+    address_range = Column('address_range', INT8RANGE())
+    data = Column('data', Text())
 
 class SymbolDB():
 

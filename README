@@ -13,10 +13,6 @@ Then, run: ./model.py to create a PostgreSQL database
 
 Then, edit __main__ in symbols.py to point it at a directory of some files containing paths to symbol files. :)
 
-BUGS
-* PUBLIC records aren't added yet
-* Need to implement ranges for STACK records
-
 TODO
 * Make this configman'd
 * Add remove() capability

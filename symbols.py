@@ -6,6 +6,9 @@ import urllib2 as urllib
 import re
 import fileinput
 
+def addr_range(address, size):
+    return "[%d, %d)" % (address, address + size)
+
 class Symbol():
 
     def __init__(self):
@@ -21,9 +24,10 @@ class Symbol():
             return None
         return(new.id)
 
-    def _add_module(self, m):
+    def _add_module(self, os, arch, debug_id, debug_file):
         try:
-            new = Module(os=m.group(1), arch=m.group(2), debug_id=m.group(3), name=m.group(4))
+            new = Module(os=os, arch=arch,
+                         debug_id=debug_id, debug_file=debug_file)
             self.symboldb.session.add(new)
             self.symboldb.session.commit()
         except ProgrammingError, e:
@@ -32,51 +36,40 @@ class Symbol():
         return(new.id)
 
 
-    def _add_file(self, m, module):
+    def _add_file(self, module, number, name):
         try:
-            new = File(number=m.group(1), name=m.group(2), module=module)
+            new = File(number=number, name=name, module=module)
             self.symboldb.session.add(new)
-            self.symboldb.session.commit()
         except ProgrammingError, e:
             print e
             return None
 
-    def _add_public(self, m, module):
+    def _add_public(self, module, address, parameter_size, name):
         try:
-            new = Public(address=int("0x%s" % m.group(1), 16),
-                           size=m.group(2), name=m.group(3),
+            new = Public(address=address,
+                         parameter_size=parameter_size,
+                         name=name,
+                         module=module)
+            self.symboldb.session.add(new)
+        except ProgrammingError, e:
+            print e
+
+    def _add_func(self, module, address, size, parameter_size, name):
+        try:
+            new = Function(parameter_size=parameter_size,
+                           name=name,
                            module=module,
-                           address_range="[%d, %d)" % (int("0x%s" % m.group(1), 16), int("0x%s" % m.group(1), 16) + int("0x%s" % m.group(2), 16) ))
+                           address_range=addr_range(address, size))
             self.symboldb.session.add(new)
         except ProgrammingError, e:
             print e
-            return None
-        return(new.id)
 
-
-    def _add_func(self, m, module):
+    def _add_line(self, module, address, size, line, file):
         try:
-            new = Function(address=int("0x%s" % m.group(1), 16),
-                           size=m.group(2),
-                           parameter_size=m.group(3),
-                           name=m.group(4),
-                           module=module,
-                           address_range="[%d, %d)" % (int("0x%s" % m.group(1), 16), int("0x%s" % m.group(1), 16) + int("0x%s" % m.group(2), 16) ))
-            self.symboldb.session.add(new)
-        except ProgrammingError, e:
-            print e
-            return None
-
-        return(new.id)
-
-    def _add_line(self, m, module):
-        try:
-            new = Line(address=int("0x%s" % m.group(1), 16),
-                       size=m.group(2),
-                       line=m.group(3),
-                       file=m.group(4),
+            new = Line(line=line,
+                       file=file,
                        module=module,
-                       address_range="[%d, %d)" % (int("0x%s" % m.group(1), 16), int("0x%s" % m.group(1), 16) + int("0x%s" % m.group(2), 16) ))
+                       address_range=addr_range(address, size))
             self.symboldb.session.add(new)
         except ProgrammingError, e:
             print e
@@ -84,15 +77,17 @@ class Symbol():
 
         return(new.id)
 
-    def _add_stack(self, m, module):
+    def _add_stack(self, module, type, address, size, data):
         try:
-            new = Stackwalk(address=int("0x%s" % m.group(2), 16), stackwalk_data=m.group(0), module=module)
+            range = None if type == "CFI" else addr_range(address, size)
+            new = Stackdata(type=type,
+                            address=address,
+                            address_range=range,
+                            data=data,
+                            module=module)
             self.symboldb.session.add(new)
         except ProgrammingError, e:
             print e
-            return None
-
-        return(new.id)
 
     def add(self, url):
         page = urllib.urlopen(url)
@@ -113,40 +108,76 @@ class Symbol():
             if not line:
                 continue
 
-            m = re.search('^MODULE (\S+) (\S+) (\S+) (\S+)', line)
+            m = re.search('^MODULE (\S+) (\S+) (\S+) (.+)', line)
             if m:
-                module = self.symboldb.session.query(Module.id).filter_by(debug_id=m.group(3), name=m.group(4)).first()
+                os=m.group(1)
+                arch=m.group(2)
+                debug_id=m.group(3)
+                debug_file=m.group(4)
+                module = self.symboldb.session.query(Module.id).filter_by(
+                    debug_id=debug_id, debug_file=debug_file).first()
                 if module:
                     skip = 1
                     break
 
-                mod_id = self._add_module(m)
+                mod_id = self._add_module(os, arch, debug_id, debug_file)
                 continue
 
             m = re.search('^FILE (\S+) (.*)', line)
             if m:
-                self._add_file(m, mod_id)
+                number = int(m.group(1))
+                name = m.group(2)
+                self._add_file(mod_id, number, name)
                 continue
 
-            m = re.search('^FUNC (\S+) (\S+) (\S+) (\S+)', line)
+            m = re.search('^FUNC (\S+) (\S+) (\S+) (.+)', line)
             if m:
-                func_id = self._add_func(m, mod_id)
+                address = int(m.group(1), 16)
+                size = int(m.group(2), 16)
+                parameter_size = int(m.group(3), 16)
+                name = m.group(4)
+                self._add_func(mod_id, address, size, parameter_size, name)
                 continue
 
-            # XXX Figure out how to handle ranges for stacks, also non WIN stacks
-            m = re.search('^STACK WIN (\S+) (\S+) (\S+) (.*)', line)
+            m = re.search('^STACK WIN ((\S+) (\S+) (\S+) .*)', line)
             if m:
-                stack_id = self._add_stack(m, mod_id)
+                address = int(m.group(3), 16)
+                size = int(m.group(4), 16)
+                data = m.group(1)
+                self._add_stack(mod_id, "WIN", address, size, data)
                 continue
 
-            # XXX
-            m = re.search('^PUBLIC (\S+) (\S+) (\S+)', line)
+            m = re.search('^STACK CFI INIT (\S+) (\S+) (.*)', line)
             if m:
+                address = int(m.group(1), 16)
+                size = int(m.group(2), 16)
+                data = m.group(3)
+                self._add_stack(mod_id, "CFI INIT", address, size, data)
                 continue
 
-            m = re.search('^(\S+) (\S+) (\S+) (\S+)', line)
+            m = re.search('^STACK CFI (\S+) (.*)', line)
             if m:
-                line = self._add_line(m, mod_id)
+                address = int(m.group(1), 16)
+                size = None
+                data = m.group(2)
+                self._add_stack(mod_id, "CFI", address, size, data)
+                continue
+
+            m = re.search('^PUBLIC (\S+) (\S+) (.+)', line)
+            if m:
+                address = int(m.group(1), 16)
+                parameter_size = int(m.group(2), 16)
+                name = m.group(3)
+                self._add_public(mod_id, address, parameter_size, name)
+                continue
+
+            m = re.search('^(\S+) (\S+) (\d+) (\d+)', line)
+            if m:
+                address = int(m.group(1), 16)
+                size = int(m.group(2), 16)
+                line = int(m.group(3))
+                file = int(m.group(4))
+                self._add_line(mod_id, address, size, line, file)
                 continue
 
         self.symboldb.session.commit()

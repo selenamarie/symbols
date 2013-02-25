@@ -128,6 +128,7 @@ class Stackdata(DeclarativeBase):
     id = Column(u'id', Integer(), primary_key=True)
     module = Column('module', Integer())
     type = Column(Enum("WIN", "CFI INIT", "CFI", name="stack_type"))
+    address = Column('address', BigInteger())
     address_range = Column('address_range', INT8RANGE())
     data = Column('data', Text())
 

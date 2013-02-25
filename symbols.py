@@ -79,8 +79,10 @@ class Symbol():
 
     def _add_stack(self, module, type, address, size, data):
         try:
+            range = None if type == "CFI" else addr_range(address, size)
             new = Stackdata(type=type,
-                            address_range=addr_range(address, size),
+                            address=address,
+                            address_range=range,
                             data=data,
                             module=module)
             self.symboldb.session.add(new)
@@ -143,6 +145,22 @@ class Symbol():
                 size = int(m.group(4), 16)
                 data = m.group(1)
                 self._add_stack(mod_id, "WIN", address, size, data)
+                continue
+
+            m = re.search('^STACK CFI INIT (\S+) (\S+) (.*)', line)
+            if m:
+                address = int(m.group(1), 16)
+                size = int(m.group(2), 16)
+                data = m.group(3)
+                self._add_stack(mod_id, "CFI INIT", address, size, data)
+                continue
+
+            m = re.search('^STACK CFI (\S+) (.*)', line)
+            if m:
+                address = int(m.group(1), 16)
+                size = None
+                data = m.group(2)
+                self._add_stack(mod_id, "CFI", address, size, data)
                 continue
 
             m = re.search('^PUBLIC (\S+) (\S+) (.+)', line)

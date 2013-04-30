@@ -78,6 +78,9 @@ class Symbol():
         return(new.id)
 
     def _add_stack(self, module, type, address, size, data):
+        # protect against bogus data, symbol dumper has a bug
+        if address > 0xffffffff:
+            return
         try:
             range = None if type == "CFI" else addr_range(address, size)
             new = Stackdata(type=type,

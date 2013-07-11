@@ -111,7 +111,7 @@ class Symbol():
 
     def _bulk_add_func(self, inserts):
         statement = "INSERT into functions (address_range, parameter_size, name, module) VALUES"
-        things = ','.join(["\n (E'%s', E'%s', E'%s', E'%s')" % 
+        things = ','.join(["\n (E'%s', E'%s', E'%s', E'%s')" %
             (addr_range(insert[0],insert[1]), insert[2], insert[3], self.module) for insert in inserts])
         statement += things
 
@@ -120,7 +120,7 @@ class Symbol():
 
     def _bulk_add_line(self, inserts):
         statement = "INSERT into lines (address_range, line, file, module) VALUES"
-        things = ','.join(["\n (E'%s', E'%s', E'%s', E'%s')" % 
+        things = ','.join(["\n (E'%s', E'%s', E'%s', E'%s')" %
             (addr_range(insert[0], insert[1]), insert[2], insert[3], self.module) for insert in inserts])
         statement += things
         self._exec(statement)
@@ -131,14 +131,16 @@ class Symbol():
         # protect against bogus data only include addresses <= 0xffffffff, symbol dumper has a bug
         non_cfi_values = ','.join(["\n (E'%s', E'%s', E'%s', E'%s', E'%s')" %
             (insert[0], addr_range(insert[1], insert[2]), insert[1], insert[3], self.module) for insert in inserts if insert[1] <= 0xffffffff and insert[0] != "CFI"])
-        statement += non_cfi_values
-        self._exec(statement)
+        if non_cfi_values != '':
+            statement += non_cfi_values
+            self._exec(statement)
 
         statement = "INSERT into stackdata (type, address_range, address, data, module) VALUES"
         cfi_values = ','.join(["\n (E'%s', Null, E'%s', E'%s', E'%s')" %
             (insert[0], insert[1], insert[3], self.module) for insert in inserts if insert[1] <= 0xffffffff and insert[0] == "CFI"])
-        statement += cfi_values
-        self._exec(statement)
+        if cfi_values != '':
+            statement += cfi_values
+            self._exec(statement)
 
 
     """ Create little piles of tuples out of the big file """

@@ -102,8 +102,8 @@ class Symbol():
 
 
     def _bulk_add_public(self, inserts):
-        statement = "INSERT into public (address, parameter_size, name, module) VALUES"
-        things = ','.join(["\n (E'%s', E'%s', E'%s', E'%s')" % (insert[:], self.module) for insert in inserts])
+        statement = "INSERT into publics (address, parameter_size, name, module) VALUES"
+        things = ','.join(["\n (E'%s', E'%s', E'%s', E'%s')" % (insert[0], insert[1], insert[2], self.module) for insert in inserts])
         statement += things
 
         self._exec(statement)

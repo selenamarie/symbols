@@ -7,7 +7,7 @@ from psycopg2 import ProgrammingError
 import re
 import logging
 
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 
 from sqlalchemy import *
 from sqlalchemy import event
@@ -68,12 +68,30 @@ class Build(DeclarativeBase):
     # http://mxr.mozilla.org/mozilla-central/source/Makefile.in#149
     # $(MOZ_APP_NAME)-$(MOZ_APP_VERSION)-$(OS_TARGET)-$(BUILDID)-$(CPU_ARCH)$(EXTRA_BUILDID)-symbols.txt
     id = Column(u'id', Integer(), primary_key=True)
+    filename = Column(u'filename', Text())
 
     moz_app_name = Column(u'moz_app_name', Text())
     moz_app_version = Column(u'moz_app_version', Text())
     os_target = Column(u'os_target', Text())
     buildid = Column(u'buildid', Text())
     cpu_arch_and_buildid = Column(u'cpu_arch_and_buildid', Text())
+    # adding fields based on cleanup-breakpad-symbols.py
+
+    build_date = Column(u'build_date', DateTime(timezone=True))
+
+class BuildSymbol(DeclarativeBase):
+    __tablename__ = 'build_symbols'
+
+    build_id = Column(u'build_id', Integer(), ForeignKey('builds.id'), primary_key=True)
+    symbol_id = Column(u'build_id', Integer(), ForeignKey('symbols.id'), primary_key=True)
+
+class Symbol(DeclarativeBase):
+    __tablename__ = 'symbols'
+
+    """ Files contained in a build file """
+    id = Column(u'id', Integer(), primary_key=True)
+    filename = Column(u'filename', Text(), unique=True)
+    full_path = Column(u'full_path', Text(), unique=True)
 
 class Module(DeclarativeBase):
     __tablename__ = 'modules'
@@ -86,7 +104,7 @@ class Module(DeclarativeBase):
     os = Column('os', Text())
     arch = Column('arch', Text())
     idx_unique_module = Index('idx_unique_module', debug_id, debug_file)
-    build = Column(u'build', Integer()) # FK to Builds
+    build_id = Column(u'build_id', Integer(), ForeignKey('builds.id')) # FK to Builds
 
 class File(DeclarativeBase):
     __tablename__ = 'files'

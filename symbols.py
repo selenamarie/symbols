@@ -18,7 +18,7 @@ class Symbol():
         self.module = None
 
     """ Split a symbols file into a few parts and process """
-    def add(self, symbols):
+    def add(self, build, symbols):
         search = {
               'MODULE': 'module'
             , 'FILE': 'file'
@@ -64,12 +64,60 @@ class Symbol():
         self.add(symbols)
 
 
-    def _get_file(self, path):
+    def load_symbols(self, build, path):
         symbols_file = open(path, 'r')
         symbols = symbols_file.readlines()
         symbols_file.close()
-        self.add(symbols)
+        self.add(build, symbols)
 
+    def _add_build(self, build):
+        parts = build.split("-")[:-1]
+        (moz_app_name, moz_app_version, os_name, buildid) = parts("-")[:4]
+        if version.endswith("a1"):
+            branch = "nightly"
+        elif version.endswith("a2"):
+            branch = "aurora"
+        elif version.endswith("pre"):
+            m = versionRE.match(version)
+            if m:
+                branch = m.group(0)
+            else:
+                branch = version
+        else:
+            branch = "release"
+
+        if len(parts) > 4:  # extra buildid, probably
+            extras = "-" + "-".join(parts[4:])
+
+        insert = """
+            INSERT INTO builds (
+                filename,
+                moz_app_name,
+                moz_app_version,
+                buildid,
+                os_target,
+                extras)
+            VALUES (
+                %(filename)s,
+                %(moz_app_name)s,
+                %(moz_app_version)s,
+                %(os_name)s,
+                %(buildid)s,
+                %(extras)s
+            )
+            RETURNING id
+        """
+
+        values = self._exec_and_return(insert %
+            { 'filename': build,
+              'moz_app_name': moz_app_name,
+              'moz_app_version': moz_app_version,
+              'buildid': buildid,
+              'os_target': os_name,
+              'extras': extras
+            })
+
+        self.build = values[0]
 
     def _exec(self, statement):
         try:
@@ -78,6 +126,16 @@ class Symbol():
         except ProgrammingError, e:
             print e
 
+    def _exec_and_return(self, statement):
+        values = ()
+        cursor = self.symboldb.session.connection().cursor()
+        try:
+            cursor.execute(statement)
+            values = cur.fetchone()
+            self.symboldb.session.commit()
+        except ProgrammingError, e:
+            print e
+        return values
 
     """ Insert chunks of file data into Postgres """
     def _bulk_add_module(self, inserts):
@@ -92,10 +150,11 @@ class Symbol():
             debug_file = insert[3]
             (self.module,) = self.symboldb.session.query(Module.id).filter_by(
                 debug_id=debug_id, debug_file=debug_file).first()
+            print self.module
 
     def _bulk_add_file(self, inserts):
         statement = "INSERT into files (number, name, module) VALUES"
-        things = ','.join(["(E'%s', E'%s', E'%s')" % (insert[0], insert[1], self.module) for insert in inserts])
+        things = ','.join(["(E'%s', '%s', E'%s')" % (insert[0], insert[1], self.module) for insert in inserts])
         statement += things
 
         self._exec(statement)
@@ -146,9 +205,11 @@ class Symbol():
     """ Create little piles of tuples out of the big file """
 
     def _add_module_pile(self, line):
+        # MODULE mac x86_64 761889B42181CD979921A004C41061500 XUL
+
         m = re.search('^MODULE (\S+) (\S+) (\S+) (.+)', line)
         if m:
-            if len(m.groups()) < 4:
+            if len(m.groups()) < 3:
                 # Bogus symbols file!
                 print "skipping %s", line
                 skip = 1
@@ -239,12 +300,15 @@ if __name__ == "__main__":
 
     import glob
     # If we're dealing with files:
+    build = ''
     for line in fileinput.input():
+        if build != fileinput.filename():
+            build = fileinput.filename()
         line = line.rstrip()
         if not line.endswith(".sym"):
             continue
         print "Working on %s" % line
-        test._get_file(line)
+        test.load_symbols(build, line)
 
     exit(0)
 

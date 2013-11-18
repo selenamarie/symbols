@@ -15,12 +15,6 @@ nightliesPerBin = 30
 versionRE = re.compile("^(\d+\.\d+)")
 
 parser = OptionParser(usage="usage: %prog [options] <symbol path> [symbol indexes to remove]")
-parser.add_option("-d", "--dry-run",
-                  action="store_true", dest="dry_run", default=False,
-                  help="Don't delete anything, just print a list of actions")
-parser.add_option("-r", "--remove-these-symbols",
-                  action="store_true", dest="remove_symbols",
-                  help="Remove specified symbol indexes and their contained symbols")
 (options, args) = parser.parse_args()
 
 if not args:
@@ -28,7 +22,7 @@ if not args:
     sys.exit(1)
 symbolPath = args[0]
 
-# Cheezy atom implementation, so we don't have to store symbol filenames 
+# Cheezy atom implementation, so we don't have to store symbol filenames
 # multiple times.
 atoms = []
 atomdict = {}
@@ -74,16 +68,30 @@ Also add 1 to filesDict[atom] for each symbol."""
 
 
 def getSizeSymbols(symbols, filesDict):
-    "Decrement reference count by one for each symbol in this symbol index."
     for a in symbols:
-        sizefiles[a] += os.path.getsize(os.path.join(symbolPath,f))
+        full_path = os.path.join(symbolPath, atoms[a])
+        if os.path.exists(full_path):
+            filesDict[a] += os.path.getsize(full_path)
+        else:
+           print "File not found: %s" % full_path
 
+def getSizePDB(symbols, filesDict):
+    for a in symbols:
+        filename = atoms[a][:-4]
+        filename += ".pdb"
+        full_path = os.path.join(symbolPath, filename)
+        if os.path.exists(full_path):
+            adddefault(filesDict, a, 0)
+            filesDict[a] += os.path.getsize(full_path)
+        else:
+           print "File not found: %s" % full_path
 
 
 # Look in the path and find any symbols files
 builds = {}
 buildfiles = {}
 sizefiles = {}
+sizepdb = {}
 
 print "[1/4] Reading symbol index files..."
 
@@ -124,12 +132,18 @@ for bin in builds:
         # count all of these
         for f in builds[bin]:
             getSizeSymbols(buildfiles[f], sizefiles)
+            #getSizePDB(buildfiles[f], sizepdb)
     else:
         builds[bin].sort(sortByBuildID)
         if len(builds[bin]) > nightliesPerBin:
             for f in builds[bin][:nightliesPerBin]:
                 getSizeSymbols(buildfiles[f], sizefiles)
+                #getSizePDB(buildfiles[f], sizepdb)
 
-print size(sum(sizefiles.values()))
+print "Total builds found: %i" % len(builds)
+print "Total files found: %i" % len(sizefiles)
+print "Total files found with .pdb: %i" % len(sizepdb)
+print "Size of files: %s" % size(sum(sizefiles.values()))
+
 
 

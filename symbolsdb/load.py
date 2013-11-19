@@ -146,7 +146,7 @@ class Symbol():
             RETURNING id
         """
 
-        values = self._exec_and_return(insert % {
+        values = self._exec_and_return_one(insert % {
             'filename': build,
             'moz_app_name': moz_app_name,
             'moz_app_version': moz_app_version,
@@ -167,7 +167,7 @@ class Symbol():
             print e
 
 
-    def _exec_and_return(self, statement):
+    def _exec_and_return_one(self, statement):
         """ Run a simple SQL statement and return one row"""
         values = ()
         cursor = self.symboldb.session.connection().cursor()

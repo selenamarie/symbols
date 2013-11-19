@@ -100,6 +100,7 @@ class File(DeclarativeBase):
     number = Column('number', Integer(), autoincrement=False)
     name = Column('name', Text())
 
+    __mapper_args__ = {"primary_key":(module, number, name)}
 
 class Function(DeclarativeBase):
     __tablename__ = 'functions'

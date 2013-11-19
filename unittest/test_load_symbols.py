@@ -2,7 +2,7 @@
 import unittest
 from mock import Mock
 import model
-from symbols import Symbol
+from load_symbols import Symbol
 
 symbolfile = """MODULE mac x86_64 761889B42181CD979921A004C41061500 XUL
 FILE 0 ../../../../../../dist/include/mozilla/mozalloc.h

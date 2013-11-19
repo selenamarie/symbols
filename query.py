@@ -32,10 +32,11 @@ def get_line_at_address(module_id, address):
     """
     Returns (file name, line number), or None if no line data was found.
     """
+    # TODO in load_symbols.py Move file.name into Line table
     res = db.session.query(model.File.name, model.Line.line).filter(
         and_(model.Line.file == model.File.number,
              model.Line.module == module_id,
-             model.File.module == module_id,
+             model.Line.module == module_id,
              model.Line.address_range.op("@>")(cast(address, BIGINT)))
         ).first()
     if res:

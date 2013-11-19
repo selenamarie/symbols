@@ -96,7 +96,6 @@ class Module(DeclarativeBase):
 class File(DeclarativeBase):
     __tablename__ = 'files'
 
-    id = Column(u'id', Integer(), primary_key=True)
     module = Column('module', Integer(), autoincrement=False)
     number = Column('number', Integer(), autoincrement=False)
     name = Column('name', Text())
@@ -132,10 +131,15 @@ class Line(DeclarativeBase):
     __tablename__ = 'lines'
 
     id = Column(u'id', Integer(), primary_key=True)
-    file_id = Column('file', Integer(), ForeignKey('files.id'))
+    file_number = Column('file_number', Integer()) # references file.number
+    file_name = Column('file_name', Text()) # maybe?
     module = Column('module', Integer(), ForeignKey('modules.id'))
     address_range = Column('address_range', INT8RANGE())
     line = Column('line', Integer())
+    __table_args__ = (
+        Index(u'idx_line_address_range',
+            address_range, postgresql_using='gist'),
+    )
 
 
 class Stackdata(DeclarativeBase):

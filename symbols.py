@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 from model import *
 from config import symbol_url
@@ -16,10 +17,8 @@ class Symbol():
         self.symboldb = SymbolDB()
         self.command = [] # list of SQL to be executed
         self.module = None
-
-    """ Split a symbols file into a few parts and process """
-    def add(self, build, symbols):
-        search = {
+        self.record_types = ['module', 'file', 'func', 'line', 'stack', 'public']
+        self.search = {
               'MODULE': 'module'
             , 'FILE': 'file'
             , 'FUNC': 'func'
@@ -27,29 +26,51 @@ class Symbol():
             , 'PUBLIC': 'public'
             , '^(\S+) (\S+) (\d+) (\d+)': 'line'
         }
-        split = 0
 
-        piles = {}
-        for value in search.values():
-            piles[value] = []
+
+    def add(self, build, symbols):
+        """ Split a list of symbols into a few parts and process """
+        search = self.search
+        split = 0
+        split_records = self.partition_symbol_records(symbols)
+        for record_type, inserts in self.create_record_inserts(split_records):
+            self.run_record_inserts(record_type, inserts)
+
+
+    def partition_symbol_records(self, symbols):
+        split_records = {}
 
         for line in symbols:
-            for linestart, column in search.iteritems():
+            for linestart, column in self.search.iteritems():
                 if re.search(linestart, line):
                     split = column
                     break
-            piles[split].append(line.rstrip())
+            try:
+                split_records[split].append(line.rstrip())
+            except KeyError:
+                split_records[split] = [line.rstrip()]
 
-        for pile in ['module', 'file', 'func', 'line', 'stack', 'public']:
+        return split_records
 
-            print " Pile size for type %s: %s" % (pile, len(piles[pile]))
-            method = '_add_' + pile + '_pile'
-            inserts = [insert for line in piles[pile] for insert in getattr(self, method)(line)]
 
-            print " Lines to insert for symbol type %s: %s" % (pile, len(inserts))
-            method = '_bulk_add_' + pile
-            if len(inserts) > 0:
-                getattr(self, method)(inserts)
+    def create_record_inserts(self, split_records):
+        """ Generate bulk insert SQL """
+
+        for record_type in self.record_types:
+            print " Pile size for type %s: %s" % (record_type, len(split_records[record_type]))
+
+            method = '_add_' + record_type + '_pile'
+            inserts = [insert for line in split_records[record_type] for insert in getattr(self, method)(line)]
+            print " Lines to insert for symbol type %s: %s" % (record_type, len(inserts))
+            yield (record_type, inserts)
+
+
+    def run_record_inserts(self, partition, inserts):
+        """ Execute bulk insert SQL """
+
+        method = '_bulk_add_' + partition
+        if len(inserts) > 0:
+            getattr(self, method)(inserts)
 
         self.symboldb.session.commit()
 
@@ -65,12 +86,15 @@ class Symbol():
 
 
     def load_symbols(self, build, path):
+        """ Read in all the lines in a -symbols.txt build file """
         symbols_file = open(path, 'r')
-        symbols = symbols_file.readlines()
+        self.symbols = symbols_file.readlines()
         symbols_file.close()
-        self.add(build, symbols)
+        self.add(build, self.symbols)
+
 
     def _add_build(self, build):
+        """ Parse out information in a build file name """
         parts = build.split("-")[:-1]
         (moz_app_name, moz_app_version, os_name, buildid) = parts("-")[:4]
         if version.endswith("a1"):
@@ -108,25 +132,28 @@ class Symbol():
             RETURNING id
         """
 
-        values = self._exec_and_return(insert %
-            { 'filename': build,
-              'moz_app_name': moz_app_name,
-              'moz_app_version': moz_app_version,
-              'buildid': buildid,
-              'os_target': os_name,
-              'extras': extras
-            })
+        values = self._exec_and_return(insert % {
+            'filename': build,
+            'moz_app_name': moz_app_name,
+            'moz_app_version': moz_app_version,
+            'buildid': buildid,
+            'os_target': os_name,
+            'extras': extras
+        })
 
         self.build = values[0]
 
     def _exec(self, statement):
+        """ Run a simple SQL statement and try to commit """
         try:
             self.symboldb.session.execute(statement)
             self.symboldb.session.commit()
         except ProgrammingError, e:
             print e
 
+
     def _exec_and_return(self, statement):
+        """ Run a simple SQL statement and return one row"""
         values = ()
         cursor = self.symboldb.session.connection().cursor()
         try:
@@ -137,7 +164,9 @@ class Symbol():
             print e
         return values
 
-    """ Insert chunks of file data into Postgres """
+
+    """ _bulk_add_* helper functions for generating SQL """
+
     def _bulk_add_module(self, inserts):
         statement = "INSERT into modules (os, arch, debug_id, debug_file) VALUES"
         things = ','.join(["\n (E'%s', E'%s', E'%s', E'%s')" % insert[:] for insert in inserts])
@@ -150,7 +179,6 @@ class Symbol():
             debug_file = insert[3]
             (self.module,) = self.symboldb.session.query(Module.id).filter_by(
                 debug_id=debug_id, debug_file=debug_file).first()
-            print self.module
 
     def _bulk_add_file(self, inserts):
         statement = "INSERT into files (number, name, module) VALUES"
@@ -202,11 +230,12 @@ class Symbol():
             self._exec(statement)
 
 
-    """ Create little piles of tuples out of the big file """
+    """ All _add_*_pile() helper functions read in a line and yield tuples to be
+        inserted into Postgres
+    """
 
     def _add_module_pile(self, line):
         # MODULE mac x86_64 761889B42181CD979921A004C41061500 XUL
-
         m = re.search('^MODULE (\S+) (\S+) (\S+) (.+)', line)
         if m:
             if len(m.groups()) < 3:
@@ -281,18 +310,6 @@ class Symbol():
 
     def remove(self, debug_id, name):
         pass
-
-
-    """ Leftover """
-    def _add_build(self, m):
-        try:
-            new = Build(os=m.group(1), arch=m.group(2), debug_id=m.group(3), name=m.group(4))
-            self.symboldb.session.add(new)
-            self.symboldb.session.commit()
-        except ProgrammingError, e:
-            print e
-            return None
-        return(new.id)
 
 
 if __name__ == "__main__":

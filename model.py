@@ -79,11 +79,13 @@ class Build(DeclarativeBase):
 
     build_date = Column(u'build_date', DateTime(timezone=True))
 
+
 class BuildSymbol(DeclarativeBase):
     __tablename__ = 'build_symbols'
 
     build_id = Column(u'build_id', Integer(), ForeignKey('builds.id'), primary_key=True)
     symbol_id = Column(u'build_id', Integer(), ForeignKey('symbols.id'), primary_key=True)
+
 
 class Symbol(DeclarativeBase):
     __tablename__ = 'symbols'
@@ -92,6 +94,7 @@ class Symbol(DeclarativeBase):
     id = Column(u'id', Integer(), primary_key=True)
     filename = Column(u'filename', Text(), unique=True)
     full_path = Column(u'full_path', Text(), unique=True)
+
 
 class Module(DeclarativeBase):
     __tablename__ = 'modules'
@@ -106,12 +109,14 @@ class Module(DeclarativeBase):
     idx_unique_module = Index('idx_unique_module', debug_id, debug_file)
     build_id = Column(u'build_id', Integer(), ForeignKey('builds.id')) # FK to Builds
 
+
 class File(DeclarativeBase):
     __tablename__ = 'files'
 
     module = Column('module', Integer(), primary_key=True, autoincrement=False)
     number = Column('number', Integer(), primary_key=True, autoincrement=False)
     name = Column('name', Text())
+
 
 class Function(DeclarativeBase):
     __tablename__ = 'functions'
@@ -122,6 +127,7 @@ class Function(DeclarativeBase):
     address_range = Column('address_range', INT8RANGE())
     parameter_size   = Column('parameter_size', Integer())
 
+
 class Public(DeclarativeBase):
     __tablename__ = 'publics'
 
@@ -131,14 +137,16 @@ class Public(DeclarativeBase):
     address = Column('address', BigInteger())
     parameter_size = Column('parameter_size', Integer())
 
+
 class Line(DeclarativeBase):
     __tablename__ = 'lines'
 
     id = Column(u'id', Integer(), primary_key=True)
-    module = Column('module', Integer())
+    file_id = Column('file', Integer(), ForeignKey('files.id'))
+    module = Column('module', Integer(), ForeignKey('modules.id'))
     address_range = Column('address_range', INT8RANGE())
     line = Column('line', Integer())
-    file = Column('file', Integer())
+
 
 class Stackdata(DeclarativeBase):
     __tablename__ = 'stackdata'
@@ -149,6 +157,7 @@ class Stackdata(DeclarativeBase):
     address = Column('address', BigInteger())
     address_range = Column('address_range', INT8RANGE())
     data = Column('data', Text())
+
 
 class SymbolDB():
 

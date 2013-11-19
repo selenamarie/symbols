@@ -1,0 +1,1 @@
+How Symbols works

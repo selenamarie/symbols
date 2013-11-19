@@ -1,3 +1,15 @@
+=======
+Symbols
+=======
+
+Symbols is a library for loading and querying Breakpad-compatible symbol data.
+
+Raw symbols data is available at http://symbols.mozilla.org
+
+
+==========
+Installing
+==========
 
 This is real rough. :)
 

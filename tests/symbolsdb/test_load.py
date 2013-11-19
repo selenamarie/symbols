@@ -1,6 +1,6 @@
 
 import unittest
-from mock import Mock
+from mock import Mock, MagicMock
 import symbolsdb.model
 from symbolsdb.load import Symbol
 
@@ -65,11 +65,17 @@ class TestSymbol(unittest.TestCase):
 
         # Need to avoid talking to the database
         self.symbol._exec = Mock()
-        self.symbol._exec_and_return = Mock()
         self.symbol_list = symbolfile.split("\n")
 
     def tearDown(self):
         pass
+
+
+    ## Helper functions
+    def function_returning_list(x, y):
+        return [1]
+
+    ## Tests
 
     def test_partition_symbol_records(self):
         self.symbol.record_types = ['module', 'stack']
@@ -78,8 +84,6 @@ class TestSymbol(unittest.TestCase):
         self.assertEqual(len(split_records['stack']), 29)
 
     def test_create_record_inserts(self):
-        self.symbol.record_types = ['module', 'func']
-        split_records = self.symbol.partition_symbol_records(self.symbol_list)
         res_dict = { 'module': [('mac', 'x86_64', '761889B42181CD979921A004C41061500', 'XUL')]
             , 'func': [
                 (7264, 67, 0, '__static_initialization_and_destruction_0'),
@@ -90,6 +94,8 @@ class TestSymbol(unittest.TestCase):
                 (7488, 15, 0, '_GLOBAL__I__ZN10nsFtpState14QueryInterfaceERK4nsIDPPv')
             ]
         }
+        self.symbol.record_types = ['module', 'func']
+        split_records = self.symbol.partition_symbol_records(self.symbol_list)
         for record_type, inserts in self.symbol.create_record_inserts(split_records):
             self.assertEqual(res_dict[record_type], inserts)
 
@@ -97,4 +103,10 @@ class TestSymbol(unittest.TestCase):
         res = ('symupload', '1.0', 'Linux', '20120709194529', '')
         build_tuple = self.symbol._parse_build('symupload-1.0-Linux-20120709194529-symbols.txt')
         self.assertEqual(res, build_tuple)
+
+    def test__add_build(self):
+        res = (1)
+        self.symbol._exec_and_return = MagicMock(return_value=[1])
+        self.symbol._add_build('symupload-1.0-Linux-20120709194529-symbols.txt')
+        self.assertEqual(res, self.symbol.build)
 

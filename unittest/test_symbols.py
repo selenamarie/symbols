@@ -71,11 +71,6 @@ class TestSymbol(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_add(self):
-        # currently refactoring this function to make it testable
-        self.symbol.record_types = ['module']
-        self.symbol.add('test', self.symbol_list)
-
     def test_partition_symbol_records(self):
         self.symbol.record_types = ['module', 'stack']
         split_records = self.symbol.partition_symbol_records(self.symbol_list)

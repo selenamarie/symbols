@@ -1,26 +1,21 @@
 #!/usr/bin/env python
 
 import sys
-import psycopg2
-import psycopg2.extensions
-from psycopg2 import ProgrammingError
 import re
 import logging
 
-from sqlalchemy import Column, Integer, String, ForeignKey
-
-from sqlalchemy import *
-from sqlalchemy import event
+import psycopg2
+import psycopg2.extensions
+import sqlalchemy.types as types
+from psycopg2 import ProgrammingError
+from sqlalchemy import Column, Integer, String, ForeignKey, Index, Text, \
+    DateTime, BigInteger, Enum, create_engine, event
+from sqlalchemy.dialects.postgresql import INT8RANGE
 from sqlalchemy.ext import compiler
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.schema import DDLElement
 from sqlalchemy.sql import table
-import sqlalchemy.types as types
-try:
-    from sqlalchemy.dialects.postgresql import *
-except ImportError:
-    from sqlalchemy.databases.postgres import *
 
 from config import sa_url
 
@@ -39,21 +34,6 @@ class CITEXT(types.UserDefinedType):
             return value
         return process
 
-
-class INT8RANGE(types.UserDefinedType):
-
-    def get_col_spec(self):
-        return 'INT8RANGE'
-
-    def bind_processor(self, dialect):
-        def process(value):
-            return value
-        return process
-
-    def result_processor(self, dialect, coltype):
-        def process(value):
-            return value
-        return process
 
 #######################################
 
@@ -106,15 +86,19 @@ class Module(DeclarativeBase):
     # remaining attributes
     os = Column('os', Text())
     arch = Column('arch', Text())
-    idx_unique_module = Index('idx_unique_module', debug_id, debug_file)
     build_id = Column(u'build_id', Integer(), ForeignKey('builds.id')) # FK to Builds
+
+    __table_args__ = (
+        Index('idx_unique_module', debug_id, debug_file),
+    )
 
 
 class File(DeclarativeBase):
     __tablename__ = 'files'
 
-    module = Column('module', Integer(), primary_key=True, autoincrement=False)
-    number = Column('number', Integer(), primary_key=True, autoincrement=False)
+    id = Column(u'id', Integer(), primary_key=True)
+    module = Column('module', Integer(), autoincrement=False)
+    number = Column('number', Integer(), autoincrement=False)
     name = Column('name', Text())
 
 
@@ -122,10 +106,16 @@ class Function(DeclarativeBase):
     __tablename__ = 'functions'
 
     id = Column(u'id', Integer(), primary_key=True)
-    module = Column('module', Integer())
-    name    = Column('name', Text())
-    address_range = Column('address_range', INT8RANGE())
-    parameter_size   = Column('parameter_size', Integer())
+    module = Column(u'module', Integer())
+    name    = Column(u'name', Text())
+    address_range = Column(u'address_range', INT8RANGE())
+    parameter_size   = Column(u'parameter_size', Integer())
+
+    __table_args__ = (
+        Index(u'idx_function_address_range',
+            address_range, postgresql_using='gist'),
+        Index('idx_function_module', module, postgresql_using='btree')
+    )
 
 
 class Public(DeclarativeBase):

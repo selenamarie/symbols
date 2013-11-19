@@ -77,4 +77,24 @@ class TestSymbol(unittest.TestCase):
         self.assertEqual(len(split_records['module']), 1)
         self.assertEqual(len(split_records['stack']), 29)
 
+    def test_create_record_inserts(self):
+        self.symbol.record_types = ['module', 'func']
+        split_records = self.symbol.partition_symbol_records(self.symbol_list)
+        res_dict = { 'module': [('mac', 'x86_64', '761889B42181CD979921A004C41061500', 'XUL')]
+            , 'func': [
+                (7264, 67, 0, '__static_initialization_and_destruction_0'),
+                (7344, 15, 0, '_GLOBAL__I_gArgc'),
+                (7360, 48, 0, '__static_initialization_and_destruction_0'),
+                (7408, 15, 0, '_GLOBAL__I__ZN27nsAsyncRedirectVerifyHelper6AddRefEv'),
+                (7424, 57, 0, '__static_initialization_and_destruction_0'),
+                (7488, 15, 0, '_GLOBAL__I__ZN10nsFtpState14QueryInterfaceERK4nsIDPPv')
+            ]
+        }
+        for record_type, inserts in self.symbol.create_record_inserts(split_records):
+            self.assertEqual(res_dict[record_type], inserts)
+
+    def test__parse_build(self):
+        res = ('symupload', '1.0', 'Linux', '20120709194529', '')
+        build_tuple = self.symbol._parse_build('symupload-1.0-Linux-20120709194529-symbols.txt')
+        self.assertEqual(res, build_tuple)
 

@@ -93,15 +93,21 @@ class Symbol():
         self.add(build, self.symbols)
 
 
-    def _add_build(self, build):
+    def _parse_build(self, build):
         """ Parse out information in a build file name """
+        extras = ''
+        branch = ''
+
+        # Remove '-symbols.txt'
         parts = build.split("-")[:-1]
-        (moz_app_name, moz_app_version, os_name, buildid) = parts("-")[:4]
-        if version.endswith("a1"):
+
+        # Divide up build data
+        (moz_app_name, moz_app_version, os_name, buildid) = parts[:4]
+        if moz_app_version.endswith("a1"):
             branch = "nightly"
-        elif version.endswith("a2"):
+        elif moz_app_version.endswith("a2"):
             branch = "aurora"
-        elif version.endswith("pre"):
+        elif moz_app_version.endswith("pre"):
             m = versionRE.match(version)
             if m:
                 branch = m.group(0)
@@ -110,8 +116,16 @@ class Symbol():
         else:
             branch = "release"
 
-        if len(parts) > 4:  # extra buildid, probably
-            extras = "-" + "-".join(parts[4:])
+        # Collect anything extra in build naming; extra buildid, probably
+        if len(parts) > 4:
+            extras = "-".join(parts[4:])
+
+        return (moz_app_name, moz_app_version, os_name, buildid, extras)
+
+
+    def _add_build(self, build):
+        (moz_app_name, moz_app_version, os_name, buildid, extras) = \
+            self._parse_build(build)
 
         insert = """
             INSERT INTO builds (
@@ -137,11 +151,12 @@ class Symbol():
             'moz_app_name': moz_app_name,
             'moz_app_version': moz_app_version,
             'buildid': buildid,
-            'os_target': os_name,
-            'extras': extras
+            'os_name': os_name,
+            'extras': extras # Can be an empty string
         })
 
         self.build = values[0]
+        return build
 
     def _exec(self, statement):
         """ Run a simple SQL statement and try to commit """

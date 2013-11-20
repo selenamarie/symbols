@@ -6,7 +6,7 @@ from symbolsdb import load
 class StressTest(object):
     """ Run a timed data load from data in fixtures/ """
     def __init__(self):
-        self.symbols = load.Symbol()
+        self.symbols = load.SymbolLoader()
 
     def load_linux(self):
         filename = "fixtures/firefox-18.0.2-Linux-20130201065344-x86-symbols.txt"

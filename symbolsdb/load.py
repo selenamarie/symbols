@@ -14,7 +14,7 @@ from model import *
 def addr_range(address, size):
     return "[%d, %d)" % (address, address + size)
 
-class Symbol(object):
+class SymbolLoader(object):
 
     def __init__(self):
         self.symboldb = SymbolDB()
@@ -348,7 +348,7 @@ class Symbol(object):
 
 
 if __name__ == "__main__":
-    test = Symbol()
+    test = SymbolLoader()
 
     import glob
     # If we're dealing with files:

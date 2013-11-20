@@ -2,7 +2,7 @@ import datetime
 import unittest
 from mock import Mock, MagicMock
 import symbolsdb.model
-from symbolsdb.load import Symbol
+from symbolsdb.load import SymbolLoader
 
 symbolfile = """MODULE mac x86_64 761889B42181CD979921A004C41061500 XUL
 FILE 0 ../../../../../../dist/include/mozilla/mozalloc.h
@@ -61,7 +61,7 @@ class TestSymbol(unittest.TestCase):
     """ Test the symbols class """
 
     def setUp(self):
-        self.symbol = Symbol()
+        self.symbol = SymbolLoader()
 
         # Need to avoid talking to the database
         self.symbol._exec = Mock()

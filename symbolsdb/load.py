@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 
-from model import *
-from config import symbol_url
-
+import os
 import urllib2 as urllib
 import re
 import fileinput
 import sys
 
+from model import *
+from config import symbol_url
+
+
 def addr_range(address, size):
     return "[%d, %d)" % (address, address + size)
 
-class Symbol():
+class Symbol(object):
 
     def __init__(self):
         self.symboldb = SymbolDB()
@@ -28,16 +30,18 @@ class Symbol():
         }
 
 
-    def add(self, build, symbols):
-        """ Split a list of symbols into a few parts and process """
-        search = self.search
-        split = 0
-        split_records = self.partition_symbol_records(symbols)
-        for record_type, inserts in self.create_record_inserts(split_records):
-            self.run_record_inserts(record_type, inserts)
+    def add_symbol_file(self, build, symbols):
+        """ Take a list of symbols filesystem paths into a few parts and process """
+        for symbol_filename in symbols:
+            with open(os.path.join(os.getcwd(), 'fixtures', symbol_filename.rstrip())) as s:
+                symbols_list = s.readlines()
+                split_records = self.partition_symbol_records(symbols_list)
+                for record_type, inserts in self.create_record_inserts(split_records):
+                    self.run_record_inserts(record_type, inserts)
 
 
     def partition_symbol_records(self, symbols):
+        split = 0
         split_records = {}
 
         for line in symbols:
@@ -82,15 +86,15 @@ class Symbol():
         page = urllib.urlopen(url)
         symbols = page.read().split('\n')
         page.close()
-        self.add(symbols)
+        self.add_symbol_file(symbols)
 
 
-    def load_symbols(self, build, path):
+    def load_build_file(self, build, path):
         """ Read in all the lines in a -symbols.txt build file """
         symbols_file = open(path, 'r')
         self.symbols = symbols_file.readlines()
         symbols_file.close()
-        self.add(build, self.symbols)
+        self.add_symbol_file(build, self.symbols)
 
 
     def _parse_build(self, build):
@@ -340,7 +344,7 @@ if __name__ == "__main__":
         if not line.endswith(".sym"):
             continue
         print "Working on %s" % line
-        test.load_symbols(build, line)
+        test.load_build_file(build, line)
 
     exit(0)
 

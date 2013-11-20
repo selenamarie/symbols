@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
-import os
-import urllib2 as urllib
-import re
+from datetime import datetime
 import fileinput
+import os
+import re
 import sys
+import urllib2 as urllib
 
-from model import *
 from config import symbol_url
+from model import *
 
 
 def addr_range(address, size):
@@ -131,6 +132,10 @@ class Symbol(object):
         (moz_app_name, moz_app_version, os_name, buildid, extras) = \
             self._parse_build(build)
 
+        # Transform buildid into a date
+        match = re.search(r'^\d{4}\d{2}\d{2}', buildid)
+        build_date = datetime.strptime(match.group(0), '%Y%m%d').date()
+
         insert = """
             INSERT INTO builds (
                 filename,
@@ -138,14 +143,16 @@ class Symbol(object):
                 moz_app_version,
                 buildid,
                 os_target,
-                extras)
+                extras,
+                build_date)
             VALUES (
                 %(filename)s,
                 %(moz_app_name)s,
                 %(moz_app_version)s,
                 %(os_name)s,
                 %(buildid)s,
-                %(extras)s
+                %(extras)s,
+                %(build_date)s
             )
             RETURNING id
         """
@@ -156,11 +163,20 @@ class Symbol(object):
             'moz_app_version': moz_app_version,
             'buildid': buildid,
             'os_name': os_name,
-            'extras': extras # Can be an empty string
+            'extras': extras, # Can be an empty string
+            'build_date': build_date, # Can be an empty string
         })
 
-        self.build = values[0]
-        return build
+        self.build = (values[0], # build row PK
+            moz_app_name,
+            moz_app_version,
+            os_name,
+            buildid,
+            extras,
+            build_date
+        )
+
+        return values[0]
 
     def _exec(self, statement):
         """ Run a simple SQL statement and try to commit """

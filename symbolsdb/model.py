@@ -54,7 +54,7 @@ class Build(DeclarativeBase):
     moz_app_version = Column(u'moz_app_version', Text())
     os_target = Column(u'os_target', Text())
     buildid = Column(u'buildid', Text())
-    cpu_arch_and_buildid = Column(u'cpu_arch_and_buildid', Text())
+    extras = Column(u'extras', Text())
     # adding fields based on cleanup-breakpad-symbols.py
 
     build_date = Column(u'build_date', DateTime(timezone=True))

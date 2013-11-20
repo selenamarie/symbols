@@ -34,8 +34,14 @@ class SymbolLoader(object):
 
     def add_symbol_file(self, build, symbols):
         """ Take a list of symbols filesystem paths into a few parts and process """
+        # First add this build to the database
+        self._add_build(build)
+        # Now parse the contents of the file and bulk load
         for symbol_filename in symbols:
-            with open(os.path.join(os.getcwd(), 'fixtures', symbol_filename.rstrip())) as s:
+            symbol_filename = symbol_filename.rstrip()
+            if not symbol_filename.endswith(".sym"):
+                continue
+            with open(os.path.join(os.getcwd(), 'fixtures', symbol_filename)) as s:
                 symbols_list = s.readlines()
                 split_records = self.partition_symbol_records(symbols_list)
                 for record_type, inserts in self.create_record_inserts(split_records):
@@ -62,13 +68,16 @@ class SymbolLoader(object):
     def create_record_inserts(self, split_records):
         """ Generate bulk insert SQL """
 
-        for record_type in self.record_types:
-            print " Pile size for type %s: %s" % (record_type, len(split_records[record_type]))
+        try:
+            for record_type in self.record_types:
+                print " Pile size for type %s: %s" % (record_type, len(split_records[record_type]))
 
-            method = '_add_' + record_type + '_pile'
-            inserts = [insert for line in split_records[record_type] for insert in getattr(self, method)(line)]
-            print " Lines to insert for symbol type %s: %s" % (record_type, len(inserts))
-            yield (record_type, inserts)
+                method = '_add_' + record_type + '_pile'
+                inserts = [insert for line in split_records[record_type] for insert in getattr(self, method)(line)]
+                print " Lines to insert for symbol type %s: %s" % (record_type, len(inserts))
+                yield (record_type, inserts)
+        except KeyError, e:
+            print "Couldn't find key: %s" % record_type
 
 
     def run_record_inserts(self, partition, inserts):
@@ -148,13 +157,13 @@ class SymbolLoader(object):
                 extras,
                 build_date)
             VALUES (
-                %(filename)s,
-                %(moz_app_name)s,
-                %(moz_app_version)s,
-                %(os_name)s,
-                %(buildid)s,
-                %(extras)s,
-                %(build_date)s
+                E'%(filename)s',
+                E'%(moz_app_name)s',
+                E'%(moz_app_version)s',
+                E'%(os_name)s',
+                E'%(buildid)s',
+                E'%(extras)s',
+                E'%(build_date)s'
             )
             RETURNING id
         """
@@ -192,11 +201,11 @@ class SymbolLoader(object):
     def _exec_and_return_one(self, statement):
         """ Run a simple SQL statement and return one row"""
         values = ()
-        cursor = self.symboldb.session.connection().cursor()
+        s = self.symboldb.session
         try:
-            cursor.execute(statement)
-            values = cur.fetchone()
-            self.symboldb.session.commit()
+            result = s.execute(statement)
+            values = result.fetchone()
+            s.commit()
         except ProgrammingError, e:
             print e
         return values

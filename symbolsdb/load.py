@@ -20,6 +20,7 @@ class SymbolLoader(object):
         self.symboldb = SymbolDB()
         self.command = [] # list of SQL to be executed
         self.module = None
+        self.build = ()
         self.record_types = ['module', 'file', 'func', 'line', 'stack', 'public']
         self.search = {
               'MODULE': 'module'
@@ -204,8 +205,8 @@ class SymbolLoader(object):
     """ _bulk_add_* helper functions for generating SQL """
 
     def _bulk_add_module(self, inserts):
-        statement = "INSERT into modules (os, arch, debug_id, debug_file) VALUES"
-        things = ','.join(["\n (E'%s', E'%s', E'%s', E'%s')" % insert[:] for insert in inserts])
+        statement = "INSERT into modules (os, arch, debug_id, debug_file, build_id) VALUES"
+        things = ','.join(["\n (E'%s', E'%s', E'%s', E'%s', %s)" % insert[:] for insert in inserts])
         statement += things
 
         self._exec(statement)
@@ -213,10 +214,12 @@ class SymbolLoader(object):
         for insert in inserts:
             debug_id = insert[2]
             debug_file = insert[3]
+            # There is only one of these modules per file processed
             (self.module,) = self.symboldb.session.query(Module.id).filter_by(
                 debug_id=debug_id, debug_file=debug_file).first()
 
     def _bulk_add_file(self, inserts):
+        """ Assumes we've already run _bulk_add_module() to set self.module """
         statement = "INSERT into files (number, name, module) VALUES"
         things = ','.join(["(E'%s', '%s', E'%s')" % (insert[0], insert[1], self.module) for insert in inserts])
         statement += things
@@ -242,7 +245,7 @@ class SymbolLoader(object):
 
 
     def _bulk_add_line(self, inserts):
-        statement = "INSERT into lines (address_range, line, file, module) VALUES"
+        statement = "INSERT into lines (address_range, line, file_number, module) VALUES"
         things = ','.join(["\n (E'%s', E'%s', E'%s', E'%s')" %
             (addr_range(insert[0], insert[1]), insert[2], insert[3], self.module) for insert in inserts])
         statement += things
@@ -271,7 +274,6 @@ class SymbolLoader(object):
     """
 
     def _add_module_pile(self, line):
-        # MODULE mac x86_64 761889B42181CD979921A004C41061500 XUL
         m = re.search('^MODULE (\S+) (\S+) (\S+) (.+)', line)
         if m:
             if len(m.groups()) < 3:
@@ -285,7 +287,7 @@ class SymbolLoader(object):
             debug_id = m.group(3)
             debug_file = m.group(4)
 
-            yield (os, arch, debug_id, debug_file)
+            yield (os, arch, debug_id, debug_file, self.build[0])
 
     def _add_file_pile(self, line):
         m = re.search('^FILE (\S+) (.*)', line)

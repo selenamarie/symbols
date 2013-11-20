@@ -84,7 +84,9 @@ class TestSymbol(unittest.TestCase):
         self.assertEqual(len(split_records['stack']), 29)
 
     def test_create_record_inserts(self):
-        res_expected = { 'module': [('mac', 'x86_64', '761889B42181CD979921A004C41061500', 'XUL')]
+        self.symbol.build = (1, 'symupload', '1.0', 'Linux', '20120709194529',
+            '', datetime.date(2012, 7, 9))
+        res_expected = { 'module': [('mac', 'x86_64', '761889B42181CD979921A004C41061500', 'XUL', 1)]
             , 'func': [
                 (7264, 67, 0, '__static_initialization_and_destruction_0'),
                 (7344, 15, 0, '_GLOBAL__I_gArgc'),
@@ -114,9 +116,12 @@ class TestSymbol(unittest.TestCase):
 
     def test__add_module_pile(self):
         line = 'MODULE mac x86_64 761889B42181CD979921A004C41061500 XUL'
+        self.symbol.build = (1, 'symupload', '1.0', 'Linux', '20120709194529',
+            '', datetime.date(2012, 7, 9))
         res_expected_list = [('mac', 'x86_64',
-            '761889B42181CD979921A004C41061500', 'XUL')]
-        for res_expected, res in zip(res_expected_list, self.symbol._add_module_pile(line)):
+            '761889B42181CD979921A004C41061500', 'XUL', 1)]
+        for res_expected, res in \
+            zip(res_expected_list, self.symbol._add_module_pile(line)):
             self.assertEqual(res_expected, res)
 
     def test__add_file_pile(self):

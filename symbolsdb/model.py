@@ -106,10 +106,10 @@ class Function(DeclarativeBase):
     __tablename__ = 'functions'
 
     id = Column(u'id', Integer(), primary_key=True)
-    module = Column(u'module', Integer())
-    name    = Column(u'name', Text())
     address_range = Column(u'address_range', INT8RANGE())
     parameter_size   = Column(u'parameter_size', Integer())
+    name    = Column(u'name', Text())
+    module = Column(u'module', Integer())
 
     __table_args__ = (
         Index(u'idx_function_address_range',
@@ -122,21 +122,21 @@ class Public(DeclarativeBase):
     __tablename__ = 'publics'
 
     id = Column(u'id', Integer(), primary_key=True)
-    module = Column('module', Integer())
-    name = Column('name', Text())
     address = Column('address', BigInteger())
     parameter_size = Column('parameter_size', Integer())
+    name = Column('name', Text())
+    module = Column('module', Integer()) # FK to Module
 
 
 class Line(DeclarativeBase):
     __tablename__ = 'lines'
 
     id = Column(u'id', Integer(), primary_key=True)
+    address_range = Column('address_range', INT8RANGE())
+    line = Column('line', Integer())
     file_number = Column('file_number', Integer()) # references file.number
     file_name = Column('file_name', Text()) # maybe?
     module = Column('module', Integer(), ForeignKey('modules.id'))
-    address_range = Column('address_range', INT8RANGE())
-    line = Column('line', Integer())
     __table_args__ = (
         Index(u'idx_line_address_range',
             address_range, postgresql_using='gist'),
@@ -147,12 +147,15 @@ class Stackdata(DeclarativeBase):
     __tablename__ = 'stackdata'
 
     id = Column(u'id', Integer(), primary_key=True)
-    module = Column('module', Integer())
     type = Column(Enum("WIN", "CFI INIT", "CFI", name="stack_type"))
-    address = Column('address', BigInteger())
     address_range = Column('address_range', INT8RANGE())
+    address = Column('address', BigInteger())
     data = Column('data', Text())
-
+    module = Column('module', Integer())
+    __table_args__ = (
+        Index(u'idx_stackdata_address_range',
+            address_range, postgresql_using='gist'),
+    )
 
 class SymbolDB():
 

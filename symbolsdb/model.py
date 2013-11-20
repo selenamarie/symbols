@@ -46,7 +46,7 @@ class Build(DeclarativeBase):
 
     # http://mxr.mozilla.org/mozilla-central/source/Makefile.in#149
     # $(MOZ_APP_NAME)-$(MOZ_APP_VERSION)-$(OS_TARGET)-$(BUILDID)-$(CPU_ARCH)$(EXTRA_BUILDID)-symbols.txt
-    id = Column(u'id', Integer, Sequence('builds_id_seq'), primary_key=True)
+    id = Column(u'id', Integer(), primary_key=True)
     filename = Column(u'filename', Text())
 
     moz_app_name = Column(u'moz_app_name', Text())
@@ -70,7 +70,7 @@ class Symbol(DeclarativeBase):
     __tablename__ = 'symbols'
 
     """ Files contained in a build file """
-    id = Column(u'id', Integer, Sequence('symbols_id_seq'), primary_key=True)
+    id = Column(u'id', Integer(), primary_key=True)
     filename = Column(u'filename', Text(), unique=True)
     full_path = Column(u'full_path', Text(), unique=True)
 
@@ -78,7 +78,7 @@ class Symbol(DeclarativeBase):
 class Module(DeclarativeBase):
     __tablename__ = 'modules'
 
-    id = Column(u'id', Integer, Sequence('modules_id_seq'), primary_key=True)
+    id = Column(u'id', Integer(), primary_key=True)
     # These are a key
     debug_id = Column('debug_id', Text())
     debug_file = Column('debug_file', Text())
@@ -104,7 +104,7 @@ class File(DeclarativeBase):
 class Function(DeclarativeBase):
     __tablename__ = 'functions'
 
-    id = Column(u'id', Integer, Sequence('function_id_seq'), primary_key=True)
+    id = Column(u'id', Integer(), primary_key=True)
     address_range = Column(u'address_range', INT8RANGE())
     parameter_size   = Column(u'parameter_size', Integer())
     name    = Column(u'name', Text())
@@ -120,7 +120,7 @@ class Function(DeclarativeBase):
 class Public(DeclarativeBase):
     __tablename__ = 'publics'
 
-    id = Column(u'id', Integer, Sequence('public_id_seq'), primary_key=True)
+    id = Column(u'id', Integer(), primary_key=True)
     address = Column('address', BigInteger())
     parameter_size = Column('parameter_size', Integer())
     name = Column('name', Text())
@@ -130,7 +130,7 @@ class Public(DeclarativeBase):
 class Line(DeclarativeBase):
     __tablename__ = 'lines'
 
-    id = Column(u'id', Integer, Sequence('line_id_seq'), primary_key=True)
+    id = Column(u'id', Integer(), primary_key=True)
     address_range = Column('address_range', INT8RANGE())
     line = Column('line', Integer())
     file_number = Column('file_number', Integer()) # references file.number
@@ -145,7 +145,7 @@ class Line(DeclarativeBase):
 class Stackdata(DeclarativeBase):
     __tablename__ = 'stackdata'
 
-    id = Column(u'id', Integer, Sequence('stackedata_id_seq'), primary_key=True)
+    id = Column(u'id', Integer(), primary_key=True)
     type = Column(Enum("WIN", "CFI INIT", "CFI", name="stack_type"))
     address_range = Column('address_range', INT8RANGE())
     address = Column('address', BigInteger())

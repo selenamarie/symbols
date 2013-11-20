@@ -7,6 +7,11 @@ import re
 import sys
 import urllib2 as urllib
 
+from sqlalchemy.sql.expression import text, literal
+from sqlalchemy import Table, Text, Integer
+from sqlalchemy.sql import table, column
+from sqlalchemy.dialects.postgresql import INT8RANGE
+
 from config import symbol_url
 from model import *
 
@@ -193,13 +198,20 @@ class SymbolLoader(object):
 
         return values[0]
 
-    def _exec(self, statement):
+    def _exec(self, statement, parameters=None):
         """ Run a simple SQL statement and try to commit """
-        try:
-            self.symboldb.session.execute(statement)
-            self.symboldb.session.commit()
-        except ProgrammingError, e:
-            print e
+        if parameters:
+            try:
+                self.symboldb.session.execute(statement, parameters)
+                self.symboldb.session.commit()
+            except ProgrammingError, e:
+                print e
+        else:
+            try:
+                self.symboldb.session.execute(statement)
+                self.symboldb.session.commit()
+            except ProgrammingError, e:
+                print e
 
 
     def _exec_and_return_one(self, statement):
@@ -247,11 +259,14 @@ class SymbolLoader(object):
 
 
     def _bulk_add_func(self, inserts):
-        statement = "INSERT into functions (address_range, parameter_size, name, module) VALUES"
+
+        function = table('functions', column('address_range', INT8RANGE), column('parameter_size', Integer), column('name', Text()), column('module', Integer))
         for slices in chunks(inserts, 1000):
-            things = ','.join(["\n ('%s', E'%s', E'%s', E'%s')" %
-                (addr_range(insert[0],insert[1]), insert[2], insert[3], self.module) for insert in slices])
-            self._exec(statement + things)
+            insert_list = []
+            for insert in slices:
+                insert_list.append(dict(zip(['address_range', 'parameter_size', 'name', 'module'], [addr_range(insert[0], insert[1]), insert[2], insert[3], self.module])))
+            modules_insert = function.insert().values(insert_list)
+            self._exec(modules_insert)
 
 
     def _bulk_add_line(self, inserts):

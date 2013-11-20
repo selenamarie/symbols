@@ -125,16 +125,17 @@ class SymbolLoader(object):
         if len(parts) > 4:
             extras = "-".join(parts[4:])
 
-        return (moz_app_name, moz_app_version, os_name, buildid, extras)
-
-
-    def _add_build(self, build):
-        (moz_app_name, moz_app_version, os_name, buildid, extras) = \
-            self._parse_build(build)
-
         # Transform buildid into a date
         match = re.search(r'^\d{4}\d{2}\d{2}', buildid)
         build_date = datetime.strptime(match.group(0), '%Y%m%d').date()
+
+        return (moz_app_name, moz_app_version, os_name, buildid, extras,
+            build_date)
+
+
+    def _add_build(self, build):
+        (moz_app_name, moz_app_version, os_name, buildid, extras,
+            build_date) = self._parse_build(build)
 
         insert = """
             INSERT INTO builds (

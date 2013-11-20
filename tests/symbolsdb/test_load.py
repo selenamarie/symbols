@@ -100,19 +100,22 @@ class TestSymbol(unittest.TestCase):
             self.assertEqual(res_expected[record_type], res)
 
     def test__parse_build(self):
-        res_expected = ('symupload', '1.0', 'Linux', '20120709194529', '')
+        res_expected = ('symupload', '1.0', 'Linux', '20120709194529', '',
+            datetime.date(2012, 7, 9))
         build_tuple = self.symbol._parse_build('symupload-1.0-Linux-20120709194529-symbols.txt')
         self.assertEqual(res_expected, build_tuple)
 
     def test__add_build(self):
-        res_expected = (1, 'symupload', '1.0', 'Linux', '20120709194529', '', datetime.date(2012, 7, 9))
+        res_expected = (1, 'symupload', '1.0', 'Linux', '20120709194529', '',
+            datetime.date(2012, 7, 9))
         self.symbol._exec_and_return_one = MagicMock(return_value=[1])
         self.symbol._add_build('symupload-1.0-Linux-20120709194529-symbols.txt')
         self.assertEqual(res_expected, self.symbol.build)
 
     def test__add_module_pile(self):
         line = 'MODULE mac x86_64 761889B42181CD979921A004C41061500 XUL'
-        res_expected_list = [('mac', 'x86_64', '761889B42181CD979921A004C41061500', 'XUL')]
+        res_expected_list = [('mac', 'x86_64',
+            '761889B42181CD979921A004C41061500', 'XUL')]
         for res_expected, res in zip(res_expected_list, self.symbol._add_module_pile(line)):
             self.assertEqual(res_expected, res)
 
@@ -144,7 +147,6 @@ class TestSymbol(unittest.TestCase):
         res_expected_list = [(0x1cc0, 4, 296, 4107)]
         for res_expected, res in zip(res_expected_list, self.symbol._add_line_pile(line)):
             self.assertEqual(res_expected, res)
-
 
     def test__add_public_pile(self):
         # Need to dig up some test data

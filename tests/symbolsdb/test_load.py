@@ -139,11 +139,12 @@ class TestSymbol(unittest.TestCase):
         for res_expected, res in zip(res_expected_list, self.symbol._add_stack_pile(line)):
             self.assertEqual(res_expected, res)
 
-    def test__add_public_pile(self):
-        pass
-
     def test__add_line_pile(self):
         line = '1cc0 4 296 4107'
         res_expected_list = [(0x1cc0, 4, 296, 4107)]
         for res_expected, res in zip(res_expected_list, self.symbol._add_line_pile(line)):
             self.assertEqual(res_expected, res)
+
+    def test__add_public_pile(self):
+        # Need to dig up some test data
+        pass

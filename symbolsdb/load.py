@@ -14,6 +14,10 @@ from model import *
 def addr_range(address, size):
     return "[%d, %d)" % (address, address + size)
 
+def chunks(inserts, chunk_size):
+    for i in xrange(0, len(inserts), chunk_size):
+        yield inserts[i:i+chunk_size]
+
 class SymbolLoader(object):
 
     def __init__(self):
@@ -230,48 +234,45 @@ class SymbolLoader(object):
     def _bulk_add_file(self, inserts):
         """ Assumes we've already run _bulk_add_module() to set self.module """
         statement = "INSERT into files (number, name, module) VALUES"
-        things = ','.join(["(E'%s', '%s', E'%s')" % (insert[0], insert[1], self.module) for insert in inserts])
-        statement += things
-
-        self._exec(statement)
+        for slices in chunks(inserts, 1000):
+            things = ','.join(["(E'%s', E'%s', E'%s')" % (insert[0], insert[1], self.module) for insert in slices])
+            self._exec(statement + things)
 
 
     def _bulk_add_public(self, inserts):
         statement = "INSERT into publics (address, parameter_size, name, module) VALUES"
-        things = ','.join(["\n (E'%s', E'%s', E'%s', E'%s')" % (insert[0], insert[1], insert[2], self.module) for insert in inserts])
-        statement += things
-
-        self._exec(statement)
+        for slices in chunks(inserts, 1000):
+            things = ','.join(["\n (E'%s', E'%s', E'%s', E'%s')" % (insert[0], insert[1], insert[2], self.module) for insert in slices])
+            self._exec(statement + things)
 
 
     def _bulk_add_func(self, inserts):
         statement = "INSERT into functions (address_range, parameter_size, name, module) VALUES"
-        things = ','.join(["\n (E'%s', E'%s', E'%s', E'%s')" %
-            (addr_range(insert[0],insert[1]), insert[2], insert[3], self.module) for insert in inserts])
-        statement += things
-
-        self._exec(statement)
+        for slices in chunks(inserts, 1000):
+            things = ','.join(["\n ('%s', E'%s', E'%s', E'%s')" %
+                (addr_range(insert[0],insert[1]), insert[2], insert[3], self.module) for insert in slices])
+            self._exec(statement + things)
 
 
     def _bulk_add_line(self, inserts):
         statement = "INSERT into lines (address_range, line, file_number, module) VALUES"
-        things = ','.join(["\n (E'%s', E'%s', E'%s', E'%s')" %
-            (addr_range(insert[0], insert[1]), insert[2], insert[3], self.module) for insert in inserts])
-        statement += things
-        self._exec(statement)
+        for slices in chunks(inserts, 1000):
+            things = ','.join(["\n ('%s', E'%s', E'%s', E'%s')" %
+                (addr_range(insert[0], insert[1]), insert[2], insert[3], self.module) for insert in slices])
+            self._exec(statement + things)
 
 
     def _bulk_add_stack(self, inserts):
         statement = "INSERT into stackdata (type, address_range, address, data, module) VALUES"
         # protect against bogus data only include addresses <= 0xffffffff, symbol dumper has a bug
-        non_cfi_values = ','.join(["\n (E'%s', E'%s', E'%s', E'%s', E'%s')" %
+        non_cfi_values = ','.join(["\n ('%s', E'%s', E'%s', E'%s', E'%s')" %
             (insert[0], addr_range(insert[1], insert[2]), insert[1], insert[3], self.module) for insert in inserts if insert[1] <= 0xffffffff and insert[0] != "CFI"])
         if non_cfi_values != '':
             statement += non_cfi_values
             self._exec(statement)
 
         statement = "INSERT into stackdata (type, address_range, address, data, module) VALUES"
-        cfi_values = ','.join(["\n (E'%s', Null, E'%s', E'%s', E'%s')" %
+        cfi_values = ','.join(["\n ('%s', Null, E'%s', E'%s', E'%s')" %
             (insert[0], insert[1], insert[3], self.module) for insert in inserts if insert[1] <= 0xffffffff and insert[0] == "CFI"])
         if cfi_values != '':
             statement += cfi_values

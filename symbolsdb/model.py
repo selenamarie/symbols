@@ -40,7 +40,6 @@ class CITEXT(types.UserDefinedType):
 DeclarativeBase = declarative_base()
 metadata = DeclarativeBase.metadata
 
-
 #################################
 class Build(DeclarativeBase):
     __tablename__ = 'builds'

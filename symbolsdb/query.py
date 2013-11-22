@@ -16,6 +16,7 @@ def get_module_id(debug_file, debug_id):
         return res[0]
     return None
 
+
 def get_function_at_address(module_id, address):
     """
     Returns function name, or None if no function was found.
@@ -28,13 +29,14 @@ def get_function_at_address(module_id, address):
         return res[0]
     return None
 
+
 def get_line_at_address(module_id, address):
     """
     Returns (file name, line number), or None if no line data was found.
     """
     # TODO in load_symbols.py Move file.name into Line table
     res = db.session.query(model.File.name, model.Line.line).filter(
-        and_(model.Line.file == model.File.number,
+        and_(model.Line.file_number == model.File.number,
              model.Line.module == module_id,
              model.Line.module == module_id,
              model.Line.address_range.op("@>")(cast(address, BIGINT)))
@@ -42,6 +44,7 @@ def get_line_at_address(module_id, address):
     if res:
         return res
     return None
+
 
 def get_public_at_address(module_id, address):
     res = db.session.query(model.Public.name).filter(
@@ -52,6 +55,7 @@ def get_public_at_address(module_id, address):
         return res[0]
     return None
 
+
 def get_stack_data_at_address(module_id, type, address):
     res = db.session.query(model.Stackdata.data).filter(
         and_(model.Stackdata.module == module_id,
@@ -61,6 +65,7 @@ def get_stack_data_at_address(module_id, type, address):
     if res:
         return res[0]
     return None
+
 
 def get_stack_cfi_data_in_range(module_id, start_address, end_address):
     res = db.session.query(model.Stackdata.data).filter(

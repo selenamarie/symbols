@@ -154,6 +154,8 @@ class Stackdata(DeclarativeBase):
     __table_args__ = (
         Index(u'idx_stackdata_address_range',
             address_range, postgresql_using='gist'),
+        Index(u'idx_stackdata_type_address_module',
+            type, address, module),
     )
 
 class SymbolDB():

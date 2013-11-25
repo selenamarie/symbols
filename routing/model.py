@@ -30,10 +30,14 @@ metadata = DeclarativeBase.metadata
 class Route(DeclarativeBase):
     __tablename__ = 'routes'
 
-    # mod % X on buildid
-    shard = Column('shard', Integer())
-    connection_id = Column('connection_id', Integer())
-
+    # mod % X on debugfile (maybe too complicated because of module...)
+    # Maybe this means we should store module information in 1 db, and then
+    # shard all the individual files...
+    #
+    # Configure pgbouncer to be connected to all, and then just ship a 
+    # connection around...
+    shard = Column('shard', Integer(), primary_key=True)
+    connection_id = Column('connection_id', Integer(), primary_key=True)
 
 class Connection(DeclarativeBase):
     __tablename__ = 'connections'
@@ -53,7 +57,7 @@ class RoutingDB():
         self.createdb = True
         self.db = "routing"
 
-        sa_url_db = sa_url + db
+        sa_url_db = sa_url + self.db
 
         engine = create_engine(sa_url_db, implicit_returning=False)
         self.engine = engine
@@ -107,5 +111,5 @@ class RoutingDB():
         return 0
 
 if __name__ == "__main__":
-    newthing = SymbolDB()
+    newthing = RoutingDB()
     newthing.main()

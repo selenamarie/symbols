@@ -12,11 +12,22 @@ from hurry.filesize import size
 
 nightliesPerBin = 30
 
+
+# What we think the current release versions are for a few products
 current_release = { 'firefox': 26, 'thunderbird': 12, 'xulrunner': 25, 'b2g': 18, 'fennec': 26 }
 
 # Only save the last six months of builds
-save_date = datetime.now() - timedelta(weeks=32)
-save_builds = { 'b2g': save_date, 'firefox': save_date }
+save_date_6mo = datetime.now() - timedelta(weeks=32)
+save_builds = { 'b2g': save_date_6mo, 'firefox': save_date_6mo }
+
+# For moz central and aurora
+save_date_6weeks = datetime.now() - timedelta(weeks=6)
+
+# For nightlies
+save_date_30days = datetime.now() - timedelta(days=30)
+
+# Betas and release by buildid (omg)
+buildids = [line.rstrip() for line in open('builds_201311', 'r')]
 
 versionRE = re.compile("^(\d+\.\d+)")
 
@@ -115,8 +126,16 @@ for f in os.listdir(symbolPath):
     (product, version, osName, buildId) = parts[:4]
     if version.endswith("a1"):
         branch = "nightly"
+        build_date = datetime.strptime(buildId[0:12], '%Y%m%d%H%M')
+        if build_date < save_date_30days:
+            print "Skipping buildId: %s for product: %s" % (buildId, product.lower())
+            continue
     elif version.endswith("a2"):
         branch = "aurora"
+        build_date = datetime.strptime(buildId[0:12], '%Y%m%d%H%M')
+        if build_date < save_date_6weeks:
+            print "Skipping buildId: %s for product: %s" % (buildId, product.lower())
+            continue
     elif version.endswith("pre"):
         m = versionRE.match(version)
         if m:
@@ -132,6 +151,11 @@ for f in os.listdir(symbolPath):
                 print "Skipping version: %s for product: %s" % (version, product.lower())
                 continue
 
+        # Try to filter out betas and releases that are too old
+        if product.lower() == 'firefox' and buildId not in builds:
+            print "BETA: Skipping buildId: %s for product: %s" % (buildId, product.lower())
+            continue
+
     # only save last 6 months of builds in our build data structure
     if product.lower() in save_builds:
         save_date = save_builds[product.lower()]
@@ -139,6 +163,7 @@ for f in os.listdir(symbolPath):
         if build_date < save_date:
             print "Skipping buildId: %s for product: %s" % (buildId, product.lower())
             continue
+
 
     # group into bins by branch-product-os[-featurebranch]
     identifier = "%s-%s-%s" % (branch, product, osName)

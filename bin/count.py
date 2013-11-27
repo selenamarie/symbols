@@ -12,6 +12,8 @@ from hurry.filesize import size
 
 nightliesPerBin = 30
 
+current_release = { 'firefox': 26, 'thunderbird': 12, 'xulrunner': 25, 'b2g': 18, 'fennec': 26 }
+
 versionRE = re.compile("^(\d+\.\d+)")
 
 parser = OptionParser(usage="usage: %prog [options] <symbol path> [symbol indexes to remove]")
@@ -73,7 +75,8 @@ def getSizeSymbols(symbols, filesDict):
         if os.path.exists(full_path):
             filesDict[a] += os.path.getsize(full_path)
         else:
-           print "File not found: %s" % full_path
+           #print "File not found: %s" % full_path
+           pass
 
 def getSizePDB(symbols, filesDict):
     for a in symbols:
@@ -118,10 +121,19 @@ for f in os.listdir(symbolPath):
             branch = version
     else:
         branch = "release"
+
+    # Only care about the releases which are ESR or current_release-2
+    version_parts = version.split('.')
+    if product.lower() in current_release:
+        if int(version_parts[0]) < (current_release[product.lower()] - 2) and not version.endswith("esr"):
+            print "Skipping version: %s for product: %s" % (version, product.lower())
+            continue
+
     # group into bins by branch-product-os[-featurebranch]
     identifier = "%s-%s-%s" % (branch, product, osName)
     if len(parts) > 4:  # extra buildid, probably
         identifier += "-" + "-".join(parts[4:])
+    print identifier, ": ", f
     adddefault(builds, identifier, [])
     builds[identifier].append(f)
 

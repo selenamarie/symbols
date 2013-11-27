@@ -14,6 +14,10 @@ nightliesPerBin = 30
 
 current_release = { 'firefox': 26, 'thunderbird': 12, 'xulrunner': 25, 'b2g': 18, 'fennec': 26 }
 
+# Only save the last six months of builds
+save_date = datetime.now() - timedelta(weeks=32)
+save_builds = { 'b2g': save_date, 'firefox': save_date }
+
 versionRE = re.compile("^(\d+\.\d+)")
 
 parser = OptionParser(usage="usage: %prog [options] <symbol path> [symbol indexes to remove]")
@@ -121,12 +125,19 @@ for f in os.listdir(symbolPath):
             branch = version
     else:
         branch = "release"
+        # Only care about the releases which are ESR or current_release-2
+        version_parts = version.split('.')
+        if product.lower() in current_release:
+            if int(version_parts[0]) < (current_release[product.lower()] - 2) and not version.endswith("esr"):
+                print "Skipping version: %s for product: %s" % (version, product.lower())
+                continue
 
-    # Only care about the releases which are ESR or current_release-2
-    version_parts = version.split('.')
-    if product.lower() in current_release:
-        if int(version_parts[0]) < (current_release[product.lower()] - 2) and not version.endswith("esr"):
-            print "Skipping version: %s for product: %s" % (version, product.lower())
+    # only save last 6 months of builds in our build data structure
+    if product.lower() in save_builds:
+        save_date = save_builds[product.lower()]
+        build_date = datetime.strptime(buildId[0:12], '%Y%m%d%H%M')
+        if build_date < save_date:
+            print "Skipping buildId: %s for product: %s" % (buildId, product.lower())
             continue
 
     # group into bins by branch-product-os[-featurebranch]
